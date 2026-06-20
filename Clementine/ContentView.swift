@@ -119,6 +119,7 @@ struct ContentView: View {
             StudyPrompt(
                 note: activeNote,
                 card: activeCard,
+                correctAnswer: correctAnswer(for: activeCard, note: activeNote),
                 choices: choices(for: activeCard, note: activeNote),
                 dueCount: dueCount,
                 newCount: newCount
@@ -204,7 +205,16 @@ struct ContentView: View {
         let correct = answer == correctAnswer(for: activeCard, note: activeNote)
         let elapsed = Date().timeIntervalSince(responseStartedAt)
         let grade = ReviewGradeMapper.multipleChoice(correct: correct, responseSeconds: elapsed)
-        applyReview(card: activeCard, note: activeNote, grade: grade, wasCorrect: correct, interaction: .multipleChoice, responseSeconds: elapsed)
+        applyReview(
+            card: activeCard,
+            note: activeNote,
+            grade: grade,
+            wasCorrect: correct,
+            interaction: .multipleChoice,
+            responseSeconds: elapsed,
+            advanceImmediately: false
+        )
+        scheduleMultipleChoiceAdvance(cardKey: activeCard.cardKey, selectedAnswer: answer)
     }
 
     private func gradeRecall(remembered: Bool, confident: Bool) {
@@ -220,7 +230,8 @@ struct ContentView: View {
         grade: ReviewGrade,
         wasCorrect: Bool,
         interaction: ReviewInteraction,
-        responseSeconds: Double
+        responseSeconds: Double,
+        advanceImmediately: Bool = true
     ) {
         do {
             let now = Date()
@@ -245,9 +256,19 @@ struct ContentView: View {
                 )
             )
             try modelContext.save()
-            moveToNextCard()
+            if advanceImmediately {
+                moveToNextCard()
+            }
         } catch {
             isAnswerRevealed = true
+        }
+    }
+
+    private func scheduleMultipleChoiceAdvance(cardKey: String, selectedAnswer: String) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.1))
+            guard activeCardKey == cardKey, selectedChoice == selectedAnswer else { return }
+            moveToNextCard()
         }
     }
 
@@ -274,6 +295,7 @@ private enum StudyScreenState {
 private struct StudyPrompt {
     var note: VocabularyNote
     var card: StudyCard
+    var correctAnswer: String
     var choices: [String]
     var dueCount: Int
     var newCount: Int
@@ -399,16 +421,90 @@ private struct MultipleChoiceControls: View {
                     selectedChoice = choice
                     chooseAnswer(choice)
                 } label: {
-                    Text(choice)
-                        .font(.title3.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                    MultipleChoiceOptionLabel(
+                        choice: choice,
+                        selectedChoice: selectedChoice,
+                        correctAnswer: prompt.correctAnswer
+                    )
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
                 .controlSize(.large)
                 .disabled(selectedChoice != nil)
             }
+
+            if let selectedChoice, selectedChoice != prompt.correctAnswer {
+                Text("Correct answer: \(prompt.correctAnswer)")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.green)
+                    .padding(.top, 2)
+            }
         }
+    }
+}
+
+private struct MultipleChoiceOptionLabel: View {
+    var choice: String
+    var selectedChoice: String?
+    var correctAnswer: String
+
+    private var isAnswered: Bool {
+        selectedChoice != nil
+    }
+
+    private var isSelected: Bool {
+        selectedChoice == choice
+    }
+
+    private var isCorrect: Bool {
+        choice == correctAnswer
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(choice)
+                .font(.title3.weight(.medium))
+                .frame(maxWidth: .infinity)
+
+            if isAnswered {
+                if isCorrect {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else if isSelected {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, minHeight: 54)
+        .background(optionBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(optionBorder, lineWidth: isAnswered && (isSelected || isCorrect) ? 2 : 1)
+        }
+        .foregroundStyle(optionForeground)
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var optionBackground: Color {
+        guard isAnswered else { return Color.primary.opacity(0.04) }
+        if isCorrect { return Color.green.opacity(0.16) }
+        if isSelected { return Color.red.opacity(0.14) }
+        return Color.primary.opacity(0.035)
+    }
+
+    private var optionBorder: Color {
+        guard isAnswered else { return Color.primary.opacity(0.12) }
+        if isCorrect { return .green }
+        if isSelected { return .red }
+        return Color.primary.opacity(0.1)
+    }
+
+    private var optionForeground: Color {
+        guard isAnswered else { return .primary }
+        if isSelected && !isCorrect { return .red }
+        return .primary
     }
 }
 
