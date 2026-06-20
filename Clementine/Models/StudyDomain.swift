@@ -31,19 +31,19 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var newCardLimit: Int {
+    var reviewLoadBudget: Int {
         switch self {
-        case .low: 2
-        case .balanced: 5
-        case .high: 18
+        case .low: 18
+        case .balanced: 42
+        case .high: 84
         }
     }
 
-    var minimumAccuracyForNewCards: Double {
+    var targetRetention: Double {
         switch self {
-        case .low: 0.82
-        case .balanced: 0.72
-        case .high: 0.60
+        case .low: 0.90
+        case .balanced: 0.90
+        case .high: 0.90
         }
     }
 }
@@ -101,6 +101,7 @@ enum AdaptiveSessionPolicy {
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
+        let horizonEnd = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
             .sorted { lhs, rhs in
@@ -110,17 +111,21 @@ enum AdaptiveSessionPolicy {
                 return lhs.dueAt < rhs.dueAt
             }
 
-        let newAllowance = newCardAllowance(
-            pace: pace,
-            dueReviewCount: dueReviews.count,
-            recentAccuracy: recentAccuracy,
-            forceNewCards: forceNewCards
-        )
+        let forecastedReviewLoad = candidates.filter {
+            !$0.isNew && $0.dueAt <= horizonEnd
+        }.count
 
         let newCards = candidates
             .filter(\.isNew)
             .sorted { $0.dueAt < $1.dueAt }
-            .prefix(newAllowance)
+            .prefix(
+                newCardAllowance(
+                    pace: pace,
+                    forecastedReviewLoad: forecastedReviewLoad,
+                    recentAccuracy: recentAccuracy,
+                    forceNewCards: forceNewCards
+                )
+            )
 
         let selected = dueReviews + Array(newCards)
         return SessionDecision(
@@ -131,16 +136,22 @@ enum AdaptiveSessionPolicy {
 
     private static func newCardAllowance(
         pace: LearningPace,
-        dueReviewCount: Int,
+        forecastedReviewLoad: Int,
         recentAccuracy: Double,
         forceNewCards: Bool
     ) -> Int {
-        let pressurePenalty = dueReviewCount >= 12 ? 2 : dueReviewCount >= 6 ? 1 : 0
-        if forceNewCards {
-            return max(1, pace.newCardLimit - pressurePenalty)
-        }
+        let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
+        guard availableLoad > 0 else { return forceNewCards ? 1 : 0 }
 
-        guard recentAccuracy >= pace.minimumAccuracyForNewCards else { return 0 }
-        return max(0, pace.newCardLimit - pressurePenalty)
+        let expectedRecallCost = 1.0
+        let expectedForgetCost = 2.0
+        let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.98)
+        let expectedReviewCost =
+            normalizedAccuracy * expectedRecallCost +
+            (1 - normalizedAccuracy) * expectedForgetCost
+        let retentionPressure = pace.targetRetention / normalizedAccuracy
+        let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
+
+        return max(forceNewCards ? 1 : 0, Int(floor(Double(availableLoad) / expectedNewCardLoad)))
     }
 }

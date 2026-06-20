@@ -46,9 +46,9 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertTrue(decision.shouldStopNaturally)
     }
 
-    func testAdaptivePolicySuppressesNewCardsAfterLowAccuracy() {
+    func testAdaptivePolicyStillIntroducesSomeNewCardsAfterLowAccuracyWhenLoadAllows() {
         let now = Date(timeIntervalSince1970: 1_000)
-        let newCards = (0..<5).map { index in
+        let newCards = (0..<30).map { index in
             SessionCardCandidate(
                 id: UUID(),
                 dueAt: now.addingTimeInterval(Double(index)),
@@ -64,12 +64,13 @@ final class StudyDomainTests: XCTestCase {
             now: now
         )
 
-        XCTAssertTrue(decision.orderedCards.isEmpty)
+        XCTAssertFalse(decision.orderedCards.isEmpty)
+        XCTAssertLessThan(decision.orderedCards.count, newCards.count)
     }
 
-    func testLearningPaceControlsNewCardAllowance() {
+    func testLearningPaceControlsReviewLoadBudget() {
         let now = Date(timeIntervalSince1970: 1_000)
-        let newCards = (0..<12).map { index in
+        let newCards = (0..<40).map { index in
             SessionCardCandidate(
                 id: UUID(),
                 dueAt: now.addingTimeInterval(Double(index)),
@@ -78,23 +79,17 @@ final class StudyDomainTests: XCTestCase {
             )
         }
 
-        XCTAssertEqual(
-            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .low, recentAccuracy: 0.9, now: now).orderedCards.count,
-            2
-        )
-        XCTAssertEqual(
-            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .balanced, recentAccuracy: 0.9, now: now).orderedCards.count,
-            5
-        )
-        XCTAssertEqual(
-            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .high, recentAccuracy: 0.9, now: now).orderedCards.count,
-            12
-        )
+        let low = AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .low, recentAccuracy: 0.9, now: now).orderedCards.count
+        let balanced = AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .balanced, recentAccuracy: 0.9, now: now).orderedCards.count
+        let high = AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .high, recentAccuracy: 0.9, now: now).orderedCards.count
+
+        XCTAssertLessThan(low, balanced)
+        XCTAssertLessThan(balanced, high)
     }
 
-    func testHighPaceToleratesLowerAccuracyThanBalanced() {
+    func testLowerAccuracyReducesButDoesNotZeroNewCardAllowance() {
         let now = Date(timeIntervalSince1970: 1_000)
-        let newCards = (0..<6).map { index in
+        let newCards = (0..<30).map { index in
             SessionCardCandidate(
                 id: UUID(),
                 dueAt: now.addingTimeInterval(Double(index)),
@@ -103,30 +98,81 @@ final class StudyDomainTests: XCTestCase {
             )
         }
 
-        XCTAssertTrue(
-            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .balanced, recentAccuracy: 0.65, now: now).orderedCards.isEmpty
-        )
-        XCTAssertEqual(
-            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .high, recentAccuracy: 0.65, now: now).orderedCards.count,
-            6
-        )
+        let highAccuracy = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        ).orderedCards.count
+        let lowAccuracy = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.45,
+            now: now
+        ).orderedCards.count
+
+        XCTAssertGreaterThan(lowAccuracy, 0)
+        XCTAssertLessThan(lowAccuracy, highAccuracy)
+    }
+
+    func testForecastedReviewLoadReducesNewCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let futureReviews = (0..<35).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 3_600),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+        let newCards = (0..<30).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let withoutBacklog = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        ).orderedCards.count
+        let withBacklog = AdaptiveSessionPolicy.chooseCards(
+            from: futureReviews + newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        ).orderedCards.filter(\.isNew).count
+
+        XCTAssertLessThan(withBacklog, withoutBacklog)
     }
 
     func testForcedContinueIntroducesNewCardsDespiteLowAccuracy() {
         let now = Date(timeIntervalSince1970: 1_000)
+        let futureReviews = (0..<18).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 3_600),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
         let newCard = SessionCardCandidate(id: UUID(), dueAt: now, isNew: true, recentLapses: 0)
 
         XCTAssertTrue(
-            AdaptiveSessionPolicy.chooseCards(from: [newCard], pace: .low, recentAccuracy: 0.2, now: now).orderedCards.isEmpty
+            AdaptiveSessionPolicy.chooseCards(from: futureReviews + [newCard], pace: .low, recentAccuracy: 0.2, now: now).orderedCards.isEmpty
         )
         XCTAssertEqual(
             AdaptiveSessionPolicy.chooseCards(
-                from: [newCard],
+                from: futureReviews + [newCard],
                 pace: .low,
                 recentAccuracy: 0.2,
                 now: now,
                 forceNewCards: true
-            ).orderedCards,
+            ).orderedCards.filter(\.isNew),
             [newCard]
         )
     }
