@@ -116,6 +116,64 @@ enum ReviewGradeMapper {
     }
 }
 
+enum MultipleChoiceBuilder {
+    static func choices(
+        correctAnswer: String,
+        distractorPool: [String],
+        seed: String,
+        optionCount: Int = 4,
+        preferredSyllableCount: Int? = nil
+    ) -> [String] {
+        let distractorCount = max(0, optionCount - 1)
+        let rankedDistractors = uniqueValues(from: distractorPool)
+            .filter { $0 != correctAnswer }
+            .sorted {
+                choiceRank($0, seed: "\(seed)#distractor") < choiceRank($1, seed: "\(seed)#distractor")
+            }
+
+        let distractors: [String]
+        if let preferredSyllableCount {
+            let matchingSyllableCount = rankedDistractors.filter {
+                pinyinSyllableCount($0) == preferredSyllableCount
+            }
+            let fallback = rankedDistractors.filter {
+                pinyinSyllableCount($0) != preferredSyllableCount
+            }
+            distractors = Array((matchingSyllableCount + fallback).prefix(distractorCount))
+        } else {
+            distractors = Array(rankedDistractors.prefix(distractorCount))
+        }
+
+        return ([correctAnswer] + distractors)
+            .sorted {
+                choiceRank($0, seed: "\(seed)#display") < choiceRank($1, seed: "\(seed)#display")
+            }
+    }
+
+    static func pinyinSyllableCount(_ pinyin: String) -> Int {
+        let tokens = pinyin
+            .split { $0.isWhitespace || $0 == "-" || $0 == "/" }
+            .filter { !$0.isEmpty }
+        return max(1, tokens.count)
+    }
+
+    private static func uniqueValues(from values: [String]) -> [String] {
+        var seen: Set<String> = []
+        return values.filter { value in
+            seen.insert(value).inserted
+        }
+    }
+
+    private static func choiceRank(_ value: String, seed: String) -> UInt64 {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in "\(seed)#\(value)".utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        return hash
+    }
+}
+
 struct SessionCardCandidate: Identifiable, Equatable {
     var id: UUID
     var dueAt: Date

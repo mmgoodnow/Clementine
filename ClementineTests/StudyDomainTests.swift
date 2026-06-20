@@ -15,6 +15,35 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(ReviewGradeMapper.recall(remembered: true, confident: true), .good)
     }
 
+    func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
+        let choices = MultipleChoiceBuilder.choices(
+            correctAnswer: "zhōng guó",
+            distractorPool: ["èr", "èr zi", "bù", "bà ba", "lǎo shī", "xué sheng", "míng tiān"],
+            seed: "hsk2-9999#hanziToPinyin"
+        )
+
+        XCTAssertTrue(choices.contains("zhōng guó"))
+        XCTAssertNotEqual(Set(choices.filter { $0 != "zhōng guó" }), Set(["èr", "èr zi", "bù"]))
+    }
+
+    func testPinyinDistractorsPreferMatchingSyllableCount() {
+        let correct = "zhōng guó"
+        let choices = MultipleChoiceBuilder.choices(
+            correctAnswer: correct,
+            distractorPool: ["èr", "bù", "wǒ", "bà ba", "lǎo shī", "xué sheng", "míng tiān"],
+            seed: "hsk2-9999#hanziToPinyin",
+            preferredSyllableCount: MultipleChoiceBuilder.pinyinSyllableCount(correct)
+        )
+
+        XCTAssertEqual(choices.count, 4)
+        XCTAssertTrue(choices.contains(correct))
+        XCTAssertTrue(
+            choices
+                .filter { $0 != correct }
+                .allSatisfy { MultipleChoiceBuilder.pinyinSyllableCount($0) == 2 }
+        )
+    }
+
     func testAdaptivePolicyPrefersDueReviews() {
         let now = Date(timeIntervalSince1970: 1_000)
         let due = SessionCardCandidate(id: UUID(), dueAt: now.addingTimeInterval(-60), isNew: false, recentLapses: 0)

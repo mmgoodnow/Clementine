@@ -183,20 +183,16 @@ struct ContentView: View {
         let pool = notes
             .map { card.kind == .hanziToPinyin ? $0.pinyin : $0.english }
             .filter { $0 != correct }
+        let preferredSyllableCount = card.kind == .hanziToPinyin
+            ? MultipleChoiceBuilder.pinyinSyllableCount(correct)
+            : nil
 
-        return Array(([correct] + pool).prefix(4))
-            .sorted {
-                choiceRank($0, seed: card.cardKey) < choiceRank($1, seed: card.cardKey)
-            }
-    }
-
-    private func choiceRank(_ value: String, seed: String) -> UInt64 {
-        var hash: UInt64 = 14_695_981_039_346_656_037
-        for byte in "\(seed)#\(value)".utf8 {
-            hash ^= UInt64(byte)
-            hash &*= 1_099_511_628_211
-        }
-        return hash
+        return MultipleChoiceBuilder.choices(
+            correctAnswer: correct,
+            distractorPool: pool,
+            seed: card.cardKey,
+            preferredSyllableCount: preferredSyllableCount
+        )
     }
 
     private func correctAnswer(for card: StudyCard, note: VocabularyNote) -> String {
