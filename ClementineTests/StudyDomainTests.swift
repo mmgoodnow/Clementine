@@ -168,7 +168,7 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(lowAccuracy, highAccuracy)
     }
 
-    func testNewCardsAreInterleavedAcrossVocabularyBeforeSiblingVariations() {
+    func testNewCardsAreBraidedAcrossVocabularyAndRecognitionTypes() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = ["word-1", "word-2", "word-3"].flatMap { noteSourceID in
             [
@@ -211,8 +211,19 @@ final class StudyDomainTests: XCTestCase {
             ["word-1", "word-2", "word-3"]
         )
         XCTAssertEqual(
-            Set(decision.orderedCards.prefix(3).map(\.kind)),
-            [.hanziToMeaning]
+            decision.orderedCards.prefix(6).map(\.kind),
+            [
+                .hanziToMeaning,
+                .hanziToPinyin,
+                .hanziToMeaning,
+                .hanziToPinyin,
+                .hanziToMeaning,
+                .hanziToPinyin
+            ]
+        )
+        XCTAssertEqual(
+            decision.orderedCards.suffix(3).map(\.kind),
+            [.recall, .recall, .recall]
         )
     }
 

@@ -160,7 +160,7 @@ enum AdaptiveSessionPolicy {
 
         let newCards = candidates
             .filter(\.isNew)
-            .sorted(by: newCardPrecedence)
+            .orderedForNewCardIntroduction()
             .prefix(
                 newCardAllowance(
                     pace: pace,
@@ -244,17 +244,47 @@ enum AdaptiveSessionPolicy {
         return max(forceNewCards ? 1 : 0, calibrationFloor, workloadAllowance)
     }
 
-    private static func newCardPrecedence(lhs: SessionCardCandidate, rhs: SessionCardCandidate) -> Bool {
-        if lhs.kind.studyOrder != rhs.kind.studyOrder {
-            return lhs.kind.studyOrder < rhs.kind.studyOrder
-        }
-        if lhs.dueAt != rhs.dueAt {
-            return lhs.dueAt < rhs.dueAt
-        }
-        return lhs.noteSourceID < rhs.noteSourceID
-    }
-
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
         min(max(value, lowerBound), upperBound)
+    }
+}
+
+private extension Array where Element == SessionCardCandidate {
+    func orderedForNewCardIntroduction() -> [SessionCardCandidate] {
+        let grouped = Dictionary(grouping: self) { candidate in
+            candidate.noteSourceID.isEmpty ? candidate.id.uuidString : candidate.noteSourceID
+        }
+        let orderedNoteKeys = grouped.keys.sorted { lhs, rhs in
+            let lhsDueAt = grouped[lhs]?.map(\.dueAt).min() ?? .distantFuture
+            let rhsDueAt = grouped[rhs]?.map(\.dueAt).min() ?? .distantFuture
+            if lhsDueAt != rhsDueAt { return lhsDueAt < rhsDueAt }
+            return lhs < rhs
+        }
+        let noteRank = Dictionary(uniqueKeysWithValues: orderedNoteKeys.enumerated().map { ($1, $0) })
+
+        return sorted { lhs, rhs in
+            let lhsNoteKey = lhs.noteSourceID.isEmpty ? lhs.id.uuidString : lhs.noteSourceID
+            let rhsNoteKey = rhs.noteSourceID.isEmpty ? rhs.id.uuidString : rhs.noteSourceID
+            let lhsNoteRank = noteRank[lhsNoteKey] ?? 0
+            let rhsNoteRank = noteRank[rhsNoteKey] ?? 0
+            let lhsKindRank = braidedKindRank(for: lhs.kind, noteRank: lhsNoteRank)
+            let rhsKindRank = braidedKindRank(for: rhs.kind, noteRank: rhsNoteRank)
+
+            if lhsKindRank != rhsKindRank { return lhsKindRank < rhsKindRank }
+            if lhsNoteRank != rhsNoteRank { return lhsNoteRank < rhsNoteRank }
+            if lhs.dueAt != rhs.dueAt { return lhs.dueAt < rhs.dueAt }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
+    private func braidedKindRank(for kind: CardKind, noteRank: Int) -> Int {
+        switch kind {
+        case .hanziToMeaning:
+            noteRank.isMultiple(of: 2) ? 0 : 1
+        case .hanziToPinyin:
+            noteRank.isMultiple(of: 2) ? 1 : 0
+        case .recall:
+            2
+        }
     }
 }
