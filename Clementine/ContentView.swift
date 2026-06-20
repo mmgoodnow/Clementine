@@ -421,28 +421,28 @@ private struct MultipleChoiceControls: View {
                     selectedChoice = choice
                     chooseAnswer(choice)
                 } label: {
-                    MultipleChoiceOptionLabel(
+                    MultipleChoiceButtonLabel(
                         choice: choice,
                         selectedChoice: selectedChoice,
                         correctAnswer: prompt.correctAnswer
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .controlSize(.large)
                 .disabled(selectedChoice != nil)
             }
 
             if let selectedChoice, selectedChoice != prompt.correctAnswer {
-                Text("Correct answer: \(prompt.correctAnswer)")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(.green)
+                Label("Correct answer: \(prompt.correctAnswer)", systemImage: "checkmark.circle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                     .padding(.top, 2)
             }
         }
     }
 }
 
-private struct MultipleChoiceOptionLabel: View {
+private struct MultipleChoiceButtonLabel: View {
     var choice: String
     var selectedChoice: String?
     var correctAnswer: String
@@ -463,6 +463,7 @@ private struct MultipleChoiceOptionLabel: View {
         HStack(spacing: 10) {
             Text(choice)
                 .font(.title3.weight(.medium))
+                .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
             if isAnswered {
@@ -476,34 +477,21 @@ private struct MultipleChoiceOptionLabel: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 13)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, minHeight: 54)
-        .background(optionBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(optionBorder, lineWidth: isAnswered && (isSelected || isCorrect) ? 2 : 1)
-        }
+        .background(feedbackBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .foregroundStyle(optionForeground)
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    private var optionBackground: Color {
-        guard isAnswered else { return Color.primary.opacity(0.04) }
-        if isCorrect { return Color.green.opacity(0.16) }
-        if isSelected { return Color.red.opacity(0.14) }
-        return Color.primary.opacity(0.035)
-    }
-
-    private var optionBorder: Color {
-        guard isAnswered else { return Color.primary.opacity(0.12) }
-        if isCorrect { return .green }
-        if isSelected { return .red }
-        return Color.primary.opacity(0.1)
+    private var feedbackBackground: Color {
+        guard isAnswered else { return Color.clear }
+        if isCorrect { return Color.green.opacity(0.08) }
+        if isSelected { return Color.red.opacity(0.07) }
+        return Color.clear
     }
 
     private var optionForeground: Color {
-        guard isAnswered else { return .primary }
-        if isSelected && !isCorrect { return .red }
         return .primary
     }
 }
