@@ -18,7 +18,7 @@ enum ClementineModelContainer {
 
     static func make(inMemory: Bool = false) throws -> ModelContainer {
         let cloudKitDatabase: ModelConfiguration.CloudKitDatabase = {
-            guard !inMemory, hasCloudKitEntitlement else { return .none }
+            guard !inMemory, usesCloudKitSync else { return .none }
             return .private(iCloudContainerIdentifier)
         }()
 
@@ -30,6 +30,10 @@ enum ClementineModelContainer {
         )
 
         return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    static var usesCloudKitSync: Bool {
+        hasCloudKitEntitlement
     }
 
     private static var hasCloudKitEntitlement: Bool {

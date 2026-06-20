@@ -1,4 +1,5 @@
 import AVFoundation
+import Charts
 import SwiftData
 import SwiftUI
 
@@ -161,7 +162,19 @@ struct ContentView: View {
             .map { card.kind == .hanziToPinyin ? $0.pinyin : $0.english }
             .filter { $0 != correct }
 
-        return Array(([correct] + pool).prefix(4)).shuffled()
+        return Array(([correct] + pool).prefix(4))
+            .sorted {
+                choiceRank($0, seed: card.cardKey) < choiceRank($1, seed: card.cardKey)
+            }
+    }
+
+    private func choiceRank(_ value: String, seed: String) -> UInt64 {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in "\(seed)#\(value)".utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        return hash
     }
 
     private func correctAnswer(for card: StudyCard, note: VocabularyNote) -> String {
@@ -395,11 +408,58 @@ private struct RecallControls: View {
                         .foregroundStyle(.secondary)
                 }
 
-                HStack {
-                    Button("Missed") { gradeRecall(false, false) }
-                    Button("Hard") { gradeRecall(true, false) }
-                    Button("Got it") { gradeRecall(true, true) }
-                        .buttonStyle(.borderedProminent)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        RecallGradeButton(
+                            title: "Missed",
+                            systemImage: "xmark",
+                            prominence: .secondary
+                        ) {
+                            gradeRecall(false, false)
+                        }
+
+                        RecallGradeButton(
+                            title: "Hard",
+                            systemImage: "exclamationmark",
+                            prominence: .secondary
+                        ) {
+                            gradeRecall(true, false)
+                        }
+
+                        RecallGradeButton(
+                            title: "Got it",
+                            systemImage: "checkmark",
+                            prominence: .primary
+                        ) {
+                            gradeRecall(true, true)
+                        }
+                    }
+
+                    VStack(spacing: 10) {
+                        RecallGradeButton(
+                            title: "Missed",
+                            systemImage: "xmark",
+                            prominence: .secondary
+                        ) {
+                            gradeRecall(false, false)
+                        }
+
+                        RecallGradeButton(
+                            title: "Hard",
+                            systemImage: "exclamationmark",
+                            prominence: .secondary
+                        ) {
+                            gradeRecall(true, false)
+                        }
+
+                        RecallGradeButton(
+                            title: "Got it",
+                            systemImage: "checkmark",
+                            prominence: .primary
+                        ) {
+                            gradeRecall(true, true)
+                        }
+                    }
                 }
                 .controlSize(.large)
             } else {
@@ -416,6 +476,42 @@ private struct RecallControls: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
             }
+        }
+    }
+}
+
+private struct RecallGradeButton: View {
+    enum Prominence {
+        case primary
+        case secondary
+    }
+
+    var title: String
+    var systemImage: String
+    var prominence: Prominence
+    var action: () -> Void
+
+    @ViewBuilder
+    var body: some View {
+        switch prominence {
+        case .primary:
+            button
+                .buttonStyle(.borderedProminent)
+        case .secondary:
+            button
+                .buttonStyle(.bordered)
+        }
+    }
+
+    private var button: some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .frame(minWidth: 104, maxWidth: .infinity, minHeight: 44)
+                .padding(.horizontal, 6)
+                .contentShape(.rect)
         }
     }
 }
@@ -464,19 +560,239 @@ private struct ProgressViewContent: View {
 
     var body: some View {
         List {
-            Section("Deck") {
-                LabeledContent("Vocabulary", value: "\(notes.count)")
-                LabeledContent("Cards", value: "\(cards.count)")
-                LabeledContent("Reviewed", value: "\(reviews.count)")
+            Section {
+                HStack(spacing: 14) {
+                    ProgressMetric(title: "Vocabulary", value: "\(notes.count)", systemImage: "character.book.closed")
+                    ProgressMetric(title: "Cards", value: "\(cards.count)", systemImage: "rectangle.stack")
+                    ProgressMetric(title: "Reviews", value: "\(reviews.count)", systemImage: "checkmark.circle")
+                }
+                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
+            Section("Vocabulary") {
+                if vocabularyPoints.isEmpty {
+                    EmptyChartMessage(text: "Vocabulary growth will appear after the deck is installed.")
+                } else {
+                    Chart(vocabularyPoints) { point in
+                        AreaMark(
+                            x: .value("Day", point.day, unit: .day),
+                            y: .value("Vocabulary", point.count)
+                        )
+                        .foregroundStyle(.green.opacity(0.16))
+
+                        LineMark(
+                            x: .value("Day", point.day, unit: .day),
+                            y: .value("Vocabulary", point.count)
+                        )
+                        .foregroundStyle(.green)
+                        .interpolationMethod(.stepEnd)
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .frame(height: 180)
+                    .accessibilityLabel("Vocabulary over time")
+                }
+            }
+
+            Section("Accuracy") {
+                if accuracyPoints.isEmpty {
+                    EmptyChartMessage(text: "Accuracy will appear after reviews.")
+                } else {
+                    Chart(accuracyPoints) { point in
+                        BarMark(
+                            x: .value("Day", point.day, unit: .day),
+                            y: .value("Accuracy", point.accuracy)
+                        )
+                        .foregroundStyle(point.accuracy >= 0.8 ? .green : .orange)
+                    }
+                    .chartYScale(domain: 0...1)
+                    .chartYAxis {
+                        AxisMarks(position: .leading, values: [0, 0.5, 1]) { value in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                if let percent = value.as(Double.self) {
+                                    Text(percent, format: .percent.precision(.fractionLength(0)))
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 180)
+                    .accessibilityLabel("Accuracy rate over time")
+                }
+            }
+
+            Section("Study Mix") {
+                if reviewMixSegments.isEmpty {
+                    EmptyChartMessage(text: "New and review mix will appear after reviews.")
+                } else {
+                    Chart(reviewMixSegments) { segment in
+                        BarMark(
+                            x: .value("Day", segment.day, unit: .day),
+                            y: .value("Cards", segment.count)
+                        )
+                        .foregroundStyle(by: .value("Type", segment.kind))
+                    }
+                    .chartForegroundStyleScale([
+                        "New": Color.blue,
+                        "Review": Color.indigo
+                    ])
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .frame(height: 180)
+                    .accessibilityLabel("New cards versus reviews")
+                }
             }
 
             Section("Sync") {
-                LabeledContent("Store", value: "iCloud Private Database")
+                LabeledContent("Store", value: ClementineModelContainer.usesCloudKitSync ? "iCloud Private Database" : "Local Debug Store")
                 LabeledContent("Container", value: ClementineModelContainer.iCloudContainerIdentifier)
             }
         }
         .navigationTitle("Progress")
     }
+
+    private var vocabularyPoints: [VocabularyPoint] {
+        guard !notes.isEmpty else { return [] }
+
+        let calendar = Calendar.current
+        let end = calendar.startOfDay(for: Date())
+        let earliest = notes
+            .map { calendar.startOfDay(for: $0.createdAt) }
+            .min() ?? end
+        let lastThirtyDays = calendar.date(byAdding: .day, value: -29, to: end) ?? end
+        let minimumWindowStart = calendar.date(byAdding: .day, value: -6, to: end) ?? end
+        let start = min(max(earliest, lastThirtyDays), minimumWindowStart)
+        let days = dateRange(from: start, to: end)
+        let noteDays = notes
+            .map { calendar.startOfDay(for: $0.createdAt) }
+            .sorted()
+        var noteIndex = 0
+
+        return days.map { day in
+            while noteIndex < noteDays.count, noteDays[noteIndex] <= day {
+                noteIndex += 1
+            }
+            return VocabularyPoint(day: day, count: noteIndex)
+        }
+    }
+
+    private var accuracyPoints: [AccuracyPoint] {
+        let grouped = Dictionary(grouping: reviews) { review in
+            Calendar.current.startOfDay(for: review.reviewedAt)
+        }
+
+        return dateRange(from: grouped.keys.min(), to: Date()).compactMap { day in
+            guard let dayReviews = grouped[day], !dayReviews.isEmpty else {
+                return nil
+            }
+            let correct = dayReviews.filter(\.wasCorrect).count
+            return AccuracyPoint(
+                day: day,
+                accuracy: Double(correct) / Double(dayReviews.count)
+            )
+        }
+    }
+
+    private var reviewMixSegments: [ReviewMixSegment] {
+        var seenCardKeys = Set<String>()
+        var countsByDayAndKind: [ReviewMixKey: Int] = [:]
+
+        for review in reviews.sorted(by: { $0.reviewedAt < $1.reviewedAt }) {
+            let kind = seenCardKeys.insert(review.cardKey).inserted ? "New" : "Review"
+            let key = ReviewMixKey(day: Calendar.current.startOfDay(for: review.reviewedAt), kind: kind)
+            countsByDayAndKind[key, default: 0] += 1
+        }
+
+        return countsByDayAndKind
+            .map { key, count in ReviewMixSegment(day: key.day, kind: key.kind, count: count) }
+            .sorted {
+                if $0.day == $1.day { return $0.kind < $1.kind }
+                return $0.day < $1.day
+            }
+    }
+
+    private func dateRange(from startDate: Date?, to endDate: Date) -> [Date] {
+        guard let startDate else { return [] }
+        return dateRange(from: startDate, to: Calendar.current.startOfDay(for: endDate))
+    }
+
+    private func dateRange(from startDate: Date, to endDate: Date) -> [Date] {
+        let calendar = Calendar.current
+        let end = calendar.startOfDay(for: endDate)
+        let earliest = calendar.startOfDay(for: startDate)
+        let start = calendar.date(byAdding: .day, value: -29, to: end).map { max($0, earliest) } ?? earliest
+
+        var days: [Date] = []
+        var day = start
+        while day <= end {
+            days.append(day)
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = nextDay
+        }
+        return days
+    }
+}
+
+private struct ProgressMetric: View {
+    var title: String
+    var value: String
+    var systemImage: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.title2.weight(.semibold))
+                .monospacedDigit()
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+    }
+}
+
+private struct EmptyChartMessage: View {
+    var text: String
+
+    var body: some View {
+        Text(text)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
+    }
+}
+
+private struct VocabularyPoint: Identifiable {
+    var id: Date { day }
+    var day: Date
+    var count: Int
+}
+
+private struct AccuracyPoint: Identifiable {
+    var id: Date { day }
+    var day: Date
+    var accuracy: Double
+}
+
+private struct ReviewMixSegment: Identifiable {
+    var id: String { "\(day.timeIntervalSinceReferenceDate)-\(kind)" }
+    var day: Date
+    var kind: String
+    var count: Int
+}
+
+private struct ReviewMixKey: Hashable {
+    var day: Date
+    var kind: String
 }
 
 private struct SettingsViewContent: View {
