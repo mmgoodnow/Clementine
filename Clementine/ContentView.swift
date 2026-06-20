@@ -377,12 +377,8 @@ private struct StudyStatusBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Label("\(dueCount)", systemImage: "clock")
-            Label("\(newCount)", systemImage: "sparkle")
+            Text("\(dueCount) due · \(newCount) new · \(kind.title)")
             Spacer()
-            Text(kind.title)
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.secondary)
         }
         .font(.callout)
         .foregroundStyle(.secondary)
