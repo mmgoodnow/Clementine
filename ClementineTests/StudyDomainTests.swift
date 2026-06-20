@@ -347,6 +347,46 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
+    func testForcedHighPaceContinueIntroducesBatchWhenForecastIsFull() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let futureReviews = (0..<120).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 3_600),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+        let newCards = (0..<40).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        XCTAssertTrue(
+            AdaptiveSessionPolicy.chooseCards(
+                from: futureReviews + newCards,
+                pace: .high,
+                recentAccuracy: 0.9,
+                now: now
+            ).orderedCards.filter(\.isNew).isEmpty
+        )
+
+        XCTAssertEqual(
+            AdaptiveSessionPolicy.chooseCards(
+                from: futureReviews + newCards,
+                pace: .high,
+                recentAccuracy: 0.9,
+                now: now,
+                forceNewCards: true
+            ).orderedCards.filter(\.isNew).count,
+            LearningPace.high.forcedContinueNewCardBatch
+        )
+    }
+
     func testForcedContinuePrioritizesNewCardsOverDueReviews() {
         let now = Date(timeIntervalSince1970: 1_000)
         let dueReview = SessionCardCandidate(

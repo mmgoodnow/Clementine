@@ -22,6 +22,7 @@ enum CardKind: String, Codable, CaseIterable, Identifiable {
         case .recall: 2
         }
     }
+
 }
 
 enum LearningPace: String, Codable, CaseIterable, Identifiable {
@@ -70,6 +71,14 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         case 60..<120: 48
         case 120..<180: 30
         default: 0
+        }
+    }
+
+    var forcedContinueNewCardBatch: Int {
+        switch self {
+        case .low: 3
+        case .balanced: 9
+        case .high: 18
         }
     }
 }
@@ -220,8 +229,9 @@ enum AdaptiveSessionPolicy {
         recentAccuracy: Double,
         forceNewCards: Bool
     ) -> Int {
+        let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
         let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
-        guard availableLoad > 0 else { return forceNewCards ? 1 : 0 }
+        guard availableLoad > 0 else { return forcedBatch }
 
         let expectedRecallCost = 1.0
         let expectedForgetCost = 2.0
@@ -241,7 +251,7 @@ enum AdaptiveSessionPolicy {
             pace.calibrationNewCardFloor(reviewedCardCount: reviewedCardCount)
         )
 
-        return max(forceNewCards ? 1 : 0, calibrationFloor, workloadAllowance)
+        return max(forcedBatch, calibrationFloor, workloadAllowance)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
