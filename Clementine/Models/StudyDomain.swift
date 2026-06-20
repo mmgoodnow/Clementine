@@ -14,6 +14,14 @@ enum CardKind: String, Codable, CaseIterable, Identifiable {
         case .recall: "Recall"
         }
     }
+
+    var studyOrder: Int {
+        switch self {
+        case .hanziToMeaning: 0
+        case .hanziToPinyin: 1
+        case .recall: 2
+        }
+    }
 }
 
 enum LearningPace: String, Codable, CaseIterable, Identifiable {
@@ -104,6 +112,24 @@ struct SessionCardCandidate: Identifiable, Equatable {
     var dueAt: Date
     var isNew: Bool
     var recentLapses: Int
+    var noteSourceID: String = ""
+    var kind: CardKind = .hanziToMeaning
+
+    init(
+        id: UUID,
+        dueAt: Date,
+        isNew: Bool,
+        recentLapses: Int,
+        noteSourceID: String = "",
+        kind: CardKind = .hanziToMeaning
+    ) {
+        self.id = id
+        self.dueAt = dueAt
+        self.isNew = isNew
+        self.recentLapses = recentLapses
+        self.noteSourceID = noteSourceID
+        self.kind = kind
+    }
 }
 
 struct SessionDecision: Equatable {
@@ -134,7 +160,7 @@ enum AdaptiveSessionPolicy {
 
         let newCards = candidates
             .filter(\.isNew)
-            .sorted { $0.dueAt < $1.dueAt }
+            .sorted(by: newCardPrecedence)
             .prefix(
                 newCardAllowance(
                     pace: pace,
@@ -216,6 +242,16 @@ enum AdaptiveSessionPolicy {
         )
 
         return max(forceNewCards ? 1 : 0, calibrationFloor, workloadAllowance)
+    }
+
+    private static func newCardPrecedence(lhs: SessionCardCandidate, rhs: SessionCardCandidate) -> Bool {
+        if lhs.kind.studyOrder != rhs.kind.studyOrder {
+            return lhs.kind.studyOrder < rhs.kind.studyOrder
+        }
+        if lhs.dueAt != rhs.dueAt {
+            return lhs.dueAt < rhs.dueAt
+        }
+        return lhs.noteSourceID < rhs.noteSourceID
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {

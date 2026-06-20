@@ -102,7 +102,7 @@ enum SeedImporter {
             )
 
             if try context.fetch(descriptor).isEmpty {
-                let orderedDueAt = now.addingTimeInterval(Double(order))
+                let orderedDueAt = now.addingTimeInterval(Double(kind.studyOrder * 10_000 + order))
                 context.insert(StudyCard(noteSourceID: item.sourceID, kind: kind, dueAt: orderedDueAt))
             }
         }

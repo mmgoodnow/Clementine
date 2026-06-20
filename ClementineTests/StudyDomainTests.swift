@@ -168,6 +168,54 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(lowAccuracy, highAccuracy)
     }
 
+    func testNewCardsAreInterleavedAcrossVocabularyBeforeSiblingVariations() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCards = ["word-1", "word-2", "word-3"].flatMap { noteSourceID in
+            [
+                SessionCardCandidate(
+                    id: UUID(),
+                    dueAt: now,
+                    isNew: true,
+                    recentLapses: 0,
+                    noteSourceID: noteSourceID,
+                    kind: .hanziToMeaning
+                ),
+                SessionCardCandidate(
+                    id: UUID(),
+                    dueAt: now,
+                    isNew: true,
+                    recentLapses: 0,
+                    noteSourceID: noteSourceID,
+                    kind: .hanziToPinyin
+                ),
+                SessionCardCandidate(
+                    id: UUID(),
+                    dueAt: now,
+                    isNew: true,
+                    recentLapses: 0,
+                    noteSourceID: noteSourceID,
+                    kind: .recall
+                )
+            ]
+        }
+
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .high,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(
+            decision.orderedCards.prefix(3).map(\.noteSourceID),
+            ["word-1", "word-2", "word-3"]
+        )
+        XCTAssertEqual(
+            Set(decision.orderedCards.prefix(3).map(\.kind)),
+            [.hanziToMeaning]
+        )
+    }
+
     func testHighPaceKeepsExploringDuringEarlyCalibration() {
         let now = Date(timeIntervalSince1970: 1_000)
         let reviewedCards = (0..<8).map { index in

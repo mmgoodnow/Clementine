@@ -38,7 +38,7 @@ final class SeedImporterTests: XCTestCase {
         XCTAssertEqual(installs.map(\.deckID), ["test"])
     }
 
-    func testSeedImportOrdersNewCardsByDeckOrder() throws {
+    func testSeedImportOrdersNewCardsByDeckOrderAndSeparatesVariations() throws {
         let container = try ClementineModelContainer.make(inMemory: true)
         let context = container.mainContext
         let now = Date(timeIntervalSince1970: 1_000)
@@ -59,8 +59,11 @@ final class SeedImporterTests: XCTestCase {
             return lhs.dueAt < rhs.dueAt
         }
 
-        XCTAssertEqual(cards.prefix(3).map(\.noteSourceID), ["test-1", "test-1", "test-1"])
-        XCTAssertEqual(cards.dropFirst(3).prefix(3).map(\.noteSourceID), ["test-2", "test-2", "test-2"])
-        XCTAssertEqual(cards.dropFirst(6).prefix(3).map(\.noteSourceID), ["test-3", "test-3", "test-3"])
+        XCTAssertEqual(cards.prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
+        XCTAssertEqual(Set(cards.prefix(3).map(\.kind)), [.hanziToMeaning])
+        XCTAssertEqual(cards.dropFirst(3).prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
+        XCTAssertEqual(Set(cards.dropFirst(3).prefix(3).map(\.kind)), [.hanziToPinyin])
+        XCTAssertEqual(cards.dropFirst(6).prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
+        XCTAssertEqual(Set(cards.dropFirst(6).prefix(3).map(\.kind)), [.recall])
     }
 }

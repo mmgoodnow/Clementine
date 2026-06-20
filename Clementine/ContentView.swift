@@ -160,7 +160,9 @@ struct ContentView: View {
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
-                    recentLapses: recentLapses(for: card.cardKey)
+                    recentLapses: recentLapses(for: card.cardKey),
+                    noteSourceID: card.noteSourceID,
+                    kind: card.kind
                 )
             }
     }
