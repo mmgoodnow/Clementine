@@ -1,30 +1,4213 @@
 {
-  "deckID": "hsk2-seed",
-  "version": 1,
+  "deckID": "hsk-seed",
+  "version": 3,
   "items": [
-    { "sourceID": "hsk2-0001", "hanzi": "爱", "pinyin": "ài", "english": "love", "lesson": "Core" },
-    { "sourceID": "hsk2-0002", "hanzi": "八", "pinyin": "bā", "english": "eight", "lesson": "Numbers" },
-    { "sourceID": "hsk2-0003", "hanzi": "爸爸", "pinyin": "bàba", "english": "father", "lesson": "Family" },
-    { "sourceID": "hsk2-0004", "hanzi": "杯子", "pinyin": "bēizi", "english": "cup; glass", "lesson": "Objects" },
-    { "sourceID": "hsk2-0005", "hanzi": "北京", "pinyin": "Běijīng", "english": "Beijing", "lesson": "Places" },
-    { "sourceID": "hsk2-0006", "hanzi": "本", "pinyin": "běn", "english": "measure word for books", "lesson": "Measure Words" },
-    { "sourceID": "hsk2-0007", "hanzi": "不客气", "pinyin": "bú kèqi", "english": "you are welcome", "lesson": "Phrases" },
-    { "sourceID": "hsk2-0008", "hanzi": "菜", "pinyin": "cài", "english": "dish; vegetable", "lesson": "Food" },
-    { "sourceID": "hsk2-0009", "hanzi": "茶", "pinyin": "chá", "english": "tea", "lesson": "Food" },
-    { "sourceID": "hsk2-0010", "hanzi": "吃", "pinyin": "chī", "english": "eat", "lesson": "Verbs" },
-    { "sourceID": "hsk2-0011", "hanzi": "出租车", "pinyin": "chūzūchē", "english": "taxi", "lesson": "Travel" },
-    { "sourceID": "hsk2-0012", "hanzi": "打电话", "pinyin": "dǎ diànhuà", "english": "make a phone call", "lesson": "Verbs" },
-    { "sourceID": "hsk2-0013", "hanzi": "大", "pinyin": "dà", "english": "big", "lesson": "Adjectives" },
-    { "sourceID": "hsk2-0014", "hanzi": "的", "pinyin": "de", "english": "possessive particle", "lesson": "Grammar" },
-    { "sourceID": "hsk2-0015", "hanzi": "点", "pinyin": "diǎn", "english": "o'clock; point", "lesson": "Time" },
-    { "sourceID": "hsk2-0016", "hanzi": "电脑", "pinyin": "diànnǎo", "english": "computer", "lesson": "Objects" },
-    { "sourceID": "hsk2-0017", "hanzi": "电视", "pinyin": "diànshì", "english": "television", "lesson": "Objects" },
-    { "sourceID": "hsk2-0018", "hanzi": "电影", "pinyin": "diànyǐng", "english": "movie", "lesson": "Entertainment" },
-    { "sourceID": "hsk2-0019", "hanzi": "东西", "pinyin": "dōngxi", "english": "thing", "lesson": "Objects" },
-    { "sourceID": "hsk2-0020", "hanzi": "都", "pinyin": "dōu", "english": "all; both", "lesson": "Grammar" },
-    { "sourceID": "hsk2-0021", "hanzi": "读", "pinyin": "dú", "english": "read", "lesson": "Verbs" },
-    { "sourceID": "hsk2-0022", "hanzi": "对不起", "pinyin": "duìbuqǐ", "english": "sorry", "lesson": "Phrases" },
-    { "sourceID": "hsk2-0023", "hanzi": "多", "pinyin": "duō", "english": "many; much", "lesson": "Adjectives" },
-    { "sourceID": "hsk2-0024", "hanzi": "多少", "pinyin": "duōshao", "english": "how many; how much", "lesson": "Questions" }
+    {
+      "sourceID": "hsk2-0001",
+      "hanzi": "爱",
+      "pinyin": "ài",
+      "english": "to love",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0002",
+      "hanzi": "八",
+      "pinyin": "bā",
+      "english": "eight",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0003",
+      "hanzi": "爸爸",
+      "pinyin": "bà ba",
+      "english": "father",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0004",
+      "hanzi": "杯子",
+      "pinyin": "bēi zi",
+      "english": "cup",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0005",
+      "hanzi": "北京",
+      "pinyin": "běi jīng",
+      "english": "Beijing",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0006",
+      "hanzi": "本",
+      "pinyin": "běn",
+      "english": "volume (of books）",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0007",
+      "hanzi": "不客气",
+      "pinyin": "bú kè qì",
+      "english": "you're welcome",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0001",
+      "hanzi": "不",
+      "pinyin": "bù",
+      "english": "no",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0008",
+      "hanzi": "菜",
+      "pinyin": "cài",
+      "english": "dish",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0009",
+      "hanzi": "茶",
+      "pinyin": "chá",
+      "english": "tea",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0010",
+      "hanzi": "吃",
+      "pinyin": "chī",
+      "english": "to eat",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0011",
+      "hanzi": "出租车",
+      "pinyin": "chū zū chē",
+      "english": "taxi",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0012",
+      "hanzi": "打电话",
+      "pinyin": "dǎ diàn huà",
+      "english": "to make a phone call",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0013",
+      "hanzi": "大",
+      "pinyin": "dà",
+      "english": "big, large",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0014",
+      "hanzi": "的",
+      "pinyin": "de",
+      "english": "a subordinating particle that can be used to indicate possession",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0015",
+      "hanzi": "点",
+      "pinyin": "diǎn",
+      "english": "o'clock",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0016",
+      "hanzi": "电脑",
+      "pinyin": "diàn nǎo",
+      "english": "computer",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0017",
+      "hanzi": "电视",
+      "pinyin": "diàn shì",
+      "english": "television",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0018",
+      "hanzi": "电影",
+      "pinyin": "diàn yǐng",
+      "english": "movie",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0019",
+      "hanzi": "东西",
+      "pinyin": "dōng xi",
+      "english": "thing, stuff",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0020",
+      "hanzi": "都",
+      "pinyin": "dōu",
+      "english": "both, all",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0021",
+      "hanzi": "读",
+      "pinyin": "dú",
+      "english": "to read",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0022",
+      "hanzi": "对不起",
+      "pinyin": "duì bu qǐ",
+      "english": "sorry",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0023",
+      "hanzi": "多",
+      "pinyin": "duō",
+      "english": "many, much",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0024",
+      "hanzi": "多少",
+      "pinyin": "duō shao",
+      "english": "how many, how much",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0002",
+      "hanzi": "儿子",
+      "pinyin": "ér zi",
+      "english": "son",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0003",
+      "hanzi": "二",
+      "pinyin": "èr",
+      "english": "two",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0004",
+      "hanzi": "饭店",
+      "pinyin": "fàn diàn",
+      "english": "restaurant",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0005",
+      "hanzi": "飞机",
+      "pinyin": "fēi jī",
+      "english": "airplane",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0006",
+      "hanzi": "高兴",
+      "pinyin": "gāo xìng",
+      "english": "happy",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0007",
+      "hanzi": "个",
+      "pinyin": "gè",
+      "english": "measure word",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0008",
+      "hanzi": "工作",
+      "pinyin": "gōng zuò",
+      "english": "to work, job",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0009",
+      "hanzi": "狗",
+      "pinyin": "gǒu",
+      "english": "dog",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0010",
+      "hanzi": "汉语",
+      "pinyin": "hàn yǔ",
+      "english": "Chinese language",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0011",
+      "hanzi": "好",
+      "pinyin": "hǎo",
+      "english": "good, nice",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0012",
+      "hanzi": "喝",
+      "pinyin": "hē",
+      "english": "to drink",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0013",
+      "hanzi": "和",
+      "pinyin": "hé",
+      "english": "and",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0014",
+      "hanzi": "很",
+      "pinyin": "hěn",
+      "english": "very",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0015",
+      "hanzi": "后面",
+      "pinyin": "hòu mian",
+      "english": "back",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0016",
+      "hanzi": "回",
+      "pinyin": "huí",
+      "english": "to return",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0017",
+      "hanzi": "会",
+      "pinyin": "huì",
+      "english": "can, know how to",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0018",
+      "hanzi": "火车站",
+      "pinyin": "huǒ chē zhàn",
+      "english": "railway station",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0019",
+      "hanzi": "几",
+      "pinyin": "jǐ",
+      "english": "how many",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0020",
+      "hanzi": "岁",
+      "pinyin": "suì",
+      "english": "years, age",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0021",
+      "hanzi": "家",
+      "pinyin": "jiā",
+      "english": "home",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0022",
+      "hanzi": "叫",
+      "pinyin": "jiào",
+      "english": "to call",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0023",
+      "hanzi": "今天",
+      "pinyin": "jīn tiān",
+      "english": "today",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0024",
+      "hanzi": "九",
+      "pinyin": "jiǔ",
+      "english": "nine",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0025",
+      "hanzi": "开",
+      "pinyin": "kāi",
+      "english": "to open",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0026",
+      "hanzi": "看",
+      "pinyin": "kān",
+      "english": "to look at",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0027",
+      "hanzi": "看见",
+      "pinyin": "kàn jiàn",
+      "english": "to see",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0028",
+      "hanzi": "块",
+      "pinyin": "kuài",
+      "english": "piece",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0029",
+      "hanzi": "来",
+      "pinyin": "lái",
+      "english": "to come",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0030",
+      "hanzi": "老师",
+      "pinyin": "lǎo shī",
+      "english": "teacher",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0031",
+      "hanzi": "冷",
+      "pinyin": "lěng",
+      "english": "cold",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0032",
+      "hanzi": "里",
+      "pinyin": "lǐ",
+      "english": "inside",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0033",
+      "hanzi": "零",
+      "pinyin": "líng",
+      "english": "zero",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0034",
+      "hanzi": "六",
+      "pinyin": "liù",
+      "english": "six",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0035",
+      "hanzi": "妈妈",
+      "pinyin": "mā ma",
+      "english": "mother",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0036",
+      "hanzi": "吗",
+      "pinyin": "ma",
+      "english": "question marker",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0037",
+      "hanzi": "买",
+      "pinyin": "mǎi",
+      "english": "to buy",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0038",
+      "hanzi": "猫",
+      "pinyin": "māo",
+      "english": "cat",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0039",
+      "hanzi": "没",
+      "pinyin": "méi",
+      "english": "not",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0040",
+      "hanzi": "没关系",
+      "pinyin": "méi guān xi",
+      "english": "it doesn't matter",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0041",
+      "hanzi": "米饭",
+      "pinyin": "mǐ fàn",
+      "english": "rice",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0042",
+      "hanzi": "名字",
+      "pinyin": "míng zi",
+      "english": "name",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0043",
+      "hanzi": "明天",
+      "pinyin": "míng tiān",
+      "english": "tomorrow",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0044",
+      "hanzi": "哪儿",
+      "pinyin": "nǎ'er",
+      "english": "where",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0045",
+      "hanzi": "那",
+      "pinyin": "nà",
+      "english": "that",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0046",
+      "hanzi": "呢",
+      "pinyin": "ne",
+      "english": "particle used for suggestion",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0047",
+      "hanzi": "能",
+      "pinyin": "néng",
+      "english": "to be able to",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0048",
+      "hanzi": "你",
+      "pinyin": "nǐ",
+      "english": "you (singular)",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0049",
+      "hanzi": "你们",
+      "pinyin": "nǐ men",
+      "english": "you (plural)",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0050",
+      "hanzi": "年",
+      "pinyin": "nián",
+      "english": "year",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0051",
+      "hanzi": "女儿",
+      "pinyin": "nǚ ' ér",
+      "english": "daughter",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0052",
+      "hanzi": "朋友",
+      "pinyin": "péng you",
+      "english": "friend",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0053",
+      "hanzi": "苹果",
+      "pinyin": "píng guǒ",
+      "english": "apple",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0054",
+      "hanzi": "七",
+      "pinyin": "qī",
+      "english": "seven",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0055",
+      "hanzi": "钱",
+      "pinyin": "qián",
+      "english": "money",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0056",
+      "hanzi": "前面",
+      "pinyin": "qián mian",
+      "english": "front",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0057",
+      "hanzi": "请",
+      "pinyin": "qǐng",
+      "english": "please",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0058",
+      "hanzi": "去",
+      "pinyin": "qù",
+      "english": "to go",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0059",
+      "hanzi": "热",
+      "pinyin": "rè",
+      "english": "hot",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0060",
+      "hanzi": "人",
+      "pinyin": "rén",
+      "english": "people",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0061",
+      "hanzi": "认识",
+      "pinyin": "rèn shi",
+      "english": "to know",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0062",
+      "hanzi": "日",
+      "pinyin": "rì",
+      "english": "day",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0063",
+      "hanzi": "三",
+      "pinyin": "sān",
+      "english": "three",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0064",
+      "hanzi": "商店",
+      "pinyin": "shāng diàn",
+      "english": "shop",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0065",
+      "hanzi": "上",
+      "pinyin": "shàng",
+      "english": "above",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0066",
+      "hanzi": "上午",
+      "pinyin": "shàng wǔ",
+      "english": "morning",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0067",
+      "hanzi": "少",
+      "pinyin": "shǎo",
+      "english": "few (not much/many)",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0068",
+      "hanzi": "什么",
+      "pinyin": "shén me",
+      "english": "what",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0069",
+      "hanzi": "十",
+      "pinyin": "shí",
+      "english": "ten",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0070",
+      "hanzi": "时候",
+      "pinyin": "shí hou",
+      "english": "a point of time",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0071",
+      "hanzi": "是",
+      "pinyin": "shì",
+      "english": "to be",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0072",
+      "hanzi": "书",
+      "pinyin": "shū",
+      "english": "book",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0073",
+      "hanzi": "谁",
+      "pinyin": "shuí",
+      "english": "who",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0074",
+      "hanzi": "水",
+      "pinyin": "shuǐ",
+      "english": "water",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0075",
+      "hanzi": "水果",
+      "pinyin": "shuǐ guǒ",
+      "english": "fruit",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0076",
+      "hanzi": "睡觉",
+      "pinyin": "shuìjiào",
+      "english": "to sleep",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0077",
+      "hanzi": "说话",
+      "pinyin": "shuō huà",
+      "english": "to say, to speak",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0078",
+      "hanzi": "四",
+      "pinyin": "sì",
+      "english": "four",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0079",
+      "hanzi": "他",
+      "pinyin": "tā",
+      "english": "he, him",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0080",
+      "hanzi": "她",
+      "pinyin": "tā",
+      "english": "she, her",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0081",
+      "hanzi": "他们",
+      "pinyin": "tā men",
+      "english": "they, them",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0082",
+      "hanzi": "她们",
+      "pinyin": "tā men",
+      "english": "they, them",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0083",
+      "hanzi": "太",
+      "pinyin": "tài",
+      "english": "too",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0084",
+      "hanzi": "天气",
+      "pinyin": "tiān qì",
+      "english": "weather",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0085",
+      "hanzi": "听",
+      "pinyin": "tīng",
+      "english": "to listen",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0086",
+      "hanzi": "同学",
+      "pinyin": "tóng xué",
+      "english": "classmate",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0087",
+      "hanzi": "我",
+      "pinyin": "wǒ",
+      "english": "I, me",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0088",
+      "hanzi": "我们",
+      "pinyin": "wǒ men",
+      "english": "we, us",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0089",
+      "hanzi": "五",
+      "pinyin": "wǔ",
+      "english": "five",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0090",
+      "hanzi": "喜欢",
+      "pinyin": "xǐ huan",
+      "english": "to like",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0091",
+      "hanzi": "下",
+      "pinyin": "xià",
+      "english": "below",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0092",
+      "hanzi": "下午",
+      "pinyin": "xià wǔ",
+      "english": "afternoon",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0093",
+      "hanzi": "下雨",
+      "pinyin": "xià yǔ",
+      "english": "to rain",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0094",
+      "hanzi": "先生",
+      "pinyin": "xiān sheng",
+      "english": "mister",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0095",
+      "hanzi": "现在",
+      "pinyin": "xiàn zài",
+      "english": "now",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0096",
+      "hanzi": "想",
+      "pinyin": "xiǎng",
+      "english": "to think",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0097",
+      "hanzi": "小",
+      "pinyin": "xiǎo",
+      "english": "small, little",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0098",
+      "hanzi": "小姐",
+      "pinyin": "xiǎo jie",
+      "english": "miss",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0099",
+      "hanzi": "些",
+      "pinyin": "xiē",
+      "english": "a few",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0100",
+      "hanzi": "写",
+      "pinyin": "xiě",
+      "english": "to write",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0101",
+      "hanzi": "谢谢",
+      "pinyin": "xiè xie",
+      "english": "thanks",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0102",
+      "hanzi": "星期",
+      "pinyin": "xīng qī",
+      "english": "week",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0103",
+      "hanzi": "学生",
+      "pinyin": "xué sheng",
+      "english": "student",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0104",
+      "hanzi": "学习",
+      "pinyin": "xué xí",
+      "english": "to study",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0105",
+      "hanzi": "学校",
+      "pinyin": "xué xiào",
+      "english": "school",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0106",
+      "hanzi": "一",
+      "pinyin": "yī",
+      "english": "one",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0107",
+      "hanzi": "衣服",
+      "pinyin": "yī fu",
+      "english": "clothing",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0108",
+      "hanzi": "医生",
+      "pinyin": "yī shēng",
+      "english": "doctor",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0109",
+      "hanzi": "医院",
+      "pinyin": "yī yuàn",
+      "english": "hospital",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0110",
+      "hanzi": "椅子",
+      "pinyin": "yǐ zi",
+      "english": "chair",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0111",
+      "hanzi": "有",
+      "pinyin": "yǒu",
+      "english": "to have",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0112",
+      "hanzi": "月",
+      "pinyin": "yuè",
+      "english": "month",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0113",
+      "hanzi": "在",
+      "pinyin": "zài",
+      "english": "at",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0114",
+      "hanzi": "再见",
+      "pinyin": "zài jiàn",
+      "english": "good-bye",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0115",
+      "hanzi": "怎么",
+      "pinyin": "zěn me",
+      "english": "how",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0116",
+      "hanzi": "怎么样",
+      "pinyin": "zěn me yàng",
+      "english": "how about",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0117",
+      "hanzi": "这",
+      "pinyin": "zhè",
+      "english": "this",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0118",
+      "hanzi": "中国",
+      "pinyin": "zhōng guó",
+      "english": "China",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0119",
+      "hanzi": "中午",
+      "pinyin": "zhōng wǔ",
+      "english": "noon",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0120",
+      "hanzi": "住",
+      "pinyin": "zhù",
+      "english": "to live",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0121",
+      "hanzi": "桌子",
+      "pinyin": "zhuō zi",
+      "english": "table",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0122",
+      "hanzi": "字",
+      "pinyin": "zì",
+      "english": "Chinese character",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0123",
+      "hanzi": "昨天",
+      "pinyin": "zuó tiān",
+      "english": "yesterday",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0124",
+      "hanzi": "做",
+      "pinyin": "zuò",
+      "english": "to do",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk1-0125",
+      "hanzi": "坐",
+      "pinyin": "zuò",
+      "english": "to sit",
+      "lesson": "HSK 1"
+    },
+    {
+      "sourceID": "hsk2-0025",
+      "hanzi": "吧",
+      "pinyin": "ba",
+      "english": "(suggestion)",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0026",
+      "hanzi": "白",
+      "pinyin": "bái",
+      "english": "white",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0027",
+      "hanzi": "百",
+      "pinyin": "bǎi",
+      "english": "hundred",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0028",
+      "hanzi": "帮助",
+      "pinyin": "bāng zhù",
+      "english": "to help",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0029",
+      "hanzi": "比",
+      "pinyin": "bǐ",
+      "english": "to compare with",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0030",
+      "hanzi": "别",
+      "pinyin": "bié",
+      "english": "do not",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0031",
+      "hanzi": "长",
+      "pinyin": "zhǎng",
+      "english": "long",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0032",
+      "hanzi": "唱歌",
+      "pinyin": "chàng gē",
+      "english": "to sing",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0033",
+      "hanzi": "出",
+      "pinyin": "chū",
+      "english": "to go out",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0034",
+      "hanzi": "穿",
+      "pinyin": "chuān",
+      "english": "to wear",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0035",
+      "hanzi": "船",
+      "pinyin": "chuán",
+      "english": "boat",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0036",
+      "hanzi": "次",
+      "pinyin": "cì",
+      "english": "time",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0037",
+      "hanzi": "从",
+      "pinyin": "cóng",
+      "english": "from",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0038",
+      "hanzi": "错",
+      "pinyin": "cuò",
+      "english": "wrong",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0039",
+      "hanzi": "打篮球",
+      "pinyin": "dǎ lán qiú",
+      "english": "to play basketball",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0040",
+      "hanzi": "大家",
+      "pinyin": "dà jiā",
+      "english": "everyone",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0041",
+      "hanzi": "但是",
+      "pinyin": "dàn shì",
+      "english": "but",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0042",
+      "hanzi": "到",
+      "pinyin": "dào",
+      "english": "to arrive",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0043",
+      "hanzi": "地",
+      "pinyin": "dì",
+      "english": "(adverbial particle)",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0044",
+      "hanzi": "得",
+      "pinyin": "děi",
+      "english": "(adverbial particle)",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0045",
+      "hanzi": "等",
+      "pinyin": "děng",
+      "english": "to wait",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0046",
+      "hanzi": "弟弟",
+      "pinyin": "dì di",
+      "english": "younger brother",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0047",
+      "hanzi": "第一",
+      "pinyin": "dì yī",
+      "english": "first",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0048",
+      "hanzi": "对",
+      "pinyin": "duì",
+      "english": "right",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0049",
+      "hanzi": "房间",
+      "pinyin": "fáng jiān",
+      "english": "room",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0050",
+      "hanzi": "非常",
+      "pinyin": "fēi cháng",
+      "english": "very",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0051",
+      "hanzi": "分钟",
+      "pinyin": "fēn zhōng",
+      "english": "minute",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0052",
+      "hanzi": "服务员",
+      "pinyin": "fú wù yuán",
+      "english": "waiter",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0053",
+      "hanzi": "高",
+      "pinyin": "gāo",
+      "english": "tall",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0054",
+      "hanzi": "告诉",
+      "pinyin": "gào sù",
+      "english": "to tell",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0055",
+      "hanzi": "哥哥",
+      "pinyin": "gē ge",
+      "english": "older brother",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0056",
+      "hanzi": "给",
+      "pinyin": "gěi",
+      "english": "to give",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0057",
+      "hanzi": "公共汽车",
+      "pinyin": "gōng gòng qì chē",
+      "english": "bus",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0058",
+      "hanzi": "公斤",
+      "pinyin": "gōng jīn",
+      "english": "kilogram",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0059",
+      "hanzi": "公司",
+      "pinyin": "gōng sī",
+      "english": "company",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0060",
+      "hanzi": "贵",
+      "pinyin": "guì",
+      "english": "expensive",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0061",
+      "hanzi": "过",
+      "pinyin": "guò",
+      "english": "(perfect tense)",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0062",
+      "hanzi": "还",
+      "pinyin": "huán",
+      "english": "still",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0063",
+      "hanzi": "孩子",
+      "pinyin": "hái zi",
+      "english": "child",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0064",
+      "hanzi": "好吃",
+      "pinyin": "hǎo chī",
+      "english": "delicious",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0065",
+      "hanzi": "号",
+      "pinyin": "hào",
+      "english": "number",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0066",
+      "hanzi": "黑",
+      "pinyin": "hēi",
+      "english": "black",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0067",
+      "hanzi": "红",
+      "pinyin": "hóng",
+      "english": "red",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0068",
+      "hanzi": "欢迎",
+      "pinyin": "huān yíng",
+      "english": "to welcome",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0069",
+      "hanzi": "回答",
+      "pinyin": "huí dá",
+      "english": "to answer",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0070",
+      "hanzi": "机场",
+      "pinyin": "jī chǎng",
+      "english": "airport",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0071",
+      "hanzi": "鸡蛋",
+      "pinyin": "jī dàn",
+      "english": "egg",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0072",
+      "hanzi": "件",
+      "pinyin": "jiàn",
+      "english": "measure word for clothing or matters",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0073",
+      "hanzi": "教室",
+      "pinyin": "jiào shì",
+      "english": "classroom",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0074",
+      "hanzi": "姐姐",
+      "pinyin": "jiě jie",
+      "english": "older sister",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0075",
+      "hanzi": "介绍",
+      "pinyin": "jiè shào",
+      "english": "to introduce",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0076",
+      "hanzi": "进",
+      "pinyin": "jìn",
+      "english": "to enter",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0077",
+      "hanzi": "近",
+      "pinyin": "jìn",
+      "english": "close",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0078",
+      "hanzi": "就",
+      "pinyin": "jiù",
+      "english": "only",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0079",
+      "hanzi": "觉得",
+      "pinyin": "jué de",
+      "english": "to think",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0080",
+      "hanzi": "咖啡",
+      "pinyin": "kā fēi",
+      "english": "coffee",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0081",
+      "hanzi": "开始",
+      "pinyin": "kāi shǐ",
+      "english": "to begin",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0082",
+      "hanzi": "考试",
+      "pinyin": "kǎo shì",
+      "english": "exam",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0083",
+      "hanzi": "可能",
+      "pinyin": "kě néng",
+      "english": "to be possible",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0084",
+      "hanzi": "可以",
+      "pinyin": "kě yǐ",
+      "english": "can",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0085",
+      "hanzi": "课",
+      "pinyin": "kè",
+      "english": "lesson",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0086",
+      "hanzi": "快",
+      "pinyin": "kuài",
+      "english": "quick",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0087",
+      "hanzi": "快乐",
+      "pinyin": "kuài lè",
+      "english": "happy",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0088",
+      "hanzi": "累",
+      "pinyin": "lèi",
+      "english": "tired",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0089",
+      "hanzi": "离",
+      "pinyin": "lí",
+      "english": "from",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0090",
+      "hanzi": "两",
+      "pinyin": "liǎng",
+      "english": "two",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0091",
+      "hanzi": "路",
+      "pinyin": "lù",
+      "english": "road",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0092",
+      "hanzi": "旅游",
+      "pinyin": "lǚ yóu",
+      "english": "to travel",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0093",
+      "hanzi": "慢",
+      "pinyin": "màn",
+      "english": "slow",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0094",
+      "hanzi": "忙",
+      "pinyin": "máng",
+      "english": "busy",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0095",
+      "hanzi": "每",
+      "pinyin": "měi",
+      "english": "every",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0096",
+      "hanzi": "妹妹",
+      "pinyin": "mèi mei",
+      "english": "younger sister",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0097",
+      "hanzi": "男人",
+      "pinyin": "nán rén",
+      "english": "man",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0098",
+      "hanzi": "您",
+      "pinyin": "nín",
+      "english": "you",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0099",
+      "hanzi": "牛奶",
+      "pinyin": "niú nǎi",
+      "english": "milk",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0100",
+      "hanzi": "女人",
+      "pinyin": "nǚ rén",
+      "english": "woman",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0101",
+      "hanzi": "旁边",
+      "pinyin": "páng biān",
+      "english": "side",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0102",
+      "hanzi": "跑步",
+      "pinyin": "pǎo bù",
+      "english": "to run",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0103",
+      "hanzi": "便宜",
+      "pinyin": "pián yi",
+      "english": "cheap",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0104",
+      "hanzi": "票",
+      "pinyin": "piào",
+      "english": "ticket",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0105",
+      "hanzi": "漂亮",
+      "pinyin": "piào liang",
+      "english": "beautiful",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0106",
+      "hanzi": "妻子",
+      "pinyin": "qī zi",
+      "english": "wife",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0107",
+      "hanzi": "起床",
+      "pinyin": "qǐ chuáng",
+      "english": "to get up",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0108",
+      "hanzi": "千",
+      "pinyin": "qiān",
+      "english": "thousand",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0109",
+      "hanzi": "晴",
+      "pinyin": "qíng",
+      "english": "sunny",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0110",
+      "hanzi": "去年",
+      "pinyin": "qù nián",
+      "english": "last year",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0111",
+      "hanzi": "让",
+      "pinyin": "ràng",
+      "english": "to let",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0112",
+      "hanzi": "上班",
+      "pinyin": "shàng bān",
+      "english": "to go to work",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0113",
+      "hanzi": "身体",
+      "pinyin": "shēn tǐ",
+      "english": "body, health",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0114",
+      "hanzi": "生病",
+      "pinyin": "shēng bìng",
+      "english": "to get sick",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0115",
+      "hanzi": "生日",
+      "pinyin": "shēng rì",
+      "english": "birthday",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0116",
+      "hanzi": "时间",
+      "pinyin": "shí jiān",
+      "english": "time",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0117",
+      "hanzi": "事情",
+      "pinyin": "shì qing",
+      "english": "matter",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0118",
+      "hanzi": "手表",
+      "pinyin": "shǒu biǎo",
+      "english": "watch",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0119",
+      "hanzi": "送",
+      "pinyin": "sòng",
+      "english": "to give, to send",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0120",
+      "hanzi": "所以",
+      "pinyin": "suǒ yǐ",
+      "english": "so",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0121",
+      "hanzi": "它",
+      "pinyin": "tā",
+      "english": "it",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0122",
+      "hanzi": "踢足球",
+      "pinyin": "tī zú qiú",
+      "english": "to play football",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0123",
+      "hanzi": "题",
+      "pinyin": "tí",
+      "english": "question",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0124",
+      "hanzi": "跳舞",
+      "pinyin": "tiào wǔ",
+      "english": "to dance",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0125",
+      "hanzi": "外",
+      "pinyin": "wài",
+      "english": "outside",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0126",
+      "hanzi": "玩",
+      "pinyin": "wán",
+      "english": "to play",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0127",
+      "hanzi": "完",
+      "pinyin": "wán",
+      "english": "to finish",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0128",
+      "hanzi": "晚上",
+      "pinyin": "wǎn shang",
+      "english": "evening",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0129",
+      "hanzi": "喂",
+      "pinyin": "wèi",
+      "english": "hey",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0130",
+      "hanzi": "为什么",
+      "pinyin": "wèi shén me",
+      "english": "why",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0131",
+      "hanzi": "问",
+      "pinyin": "wèn",
+      "english": "to ask",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0132",
+      "hanzi": "问题",
+      "pinyin": "wèn tí",
+      "english": "question",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0133",
+      "hanzi": "西瓜",
+      "pinyin": "xī guā",
+      "english": "watermelon",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0134",
+      "hanzi": "希望",
+      "pinyin": "xī wàng",
+      "english": "to hope",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0135",
+      "hanzi": "洗",
+      "pinyin": "xǐ",
+      "english": "to wash",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0136",
+      "hanzi": "向",
+      "pinyin": "xiàng",
+      "english": "towards",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0137",
+      "hanzi": "小时",
+      "pinyin": "xiǎo shí",
+      "english": "hour",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0138",
+      "hanzi": "笑",
+      "pinyin": "xiào",
+      "english": "to smile",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0139",
+      "hanzi": "新",
+      "pinyin": "xīn",
+      "english": "new",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0140",
+      "hanzi": "姓",
+      "pinyin": "xìng",
+      "english": "family name",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0141",
+      "hanzi": "休息",
+      "pinyin": "xiū xi",
+      "english": "to rest",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0142",
+      "hanzi": "雪",
+      "pinyin": "xuě",
+      "english": "snow",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0143",
+      "hanzi": "颜色",
+      "pinyin": "yán sè",
+      "english": "color",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0144",
+      "hanzi": "眼睛",
+      "pinyin": "yǎn jing",
+      "english": "eye",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0145",
+      "hanzi": "羊肉",
+      "pinyin": "yáng ròu",
+      "english": "lamb",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0146",
+      "hanzi": "药",
+      "pinyin": "yào",
+      "english": "medicine",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0147",
+      "hanzi": "要",
+      "pinyin": "yào",
+      "english": "to want, will",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0148",
+      "hanzi": "也",
+      "pinyin": "yě",
+      "english": "also",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0149",
+      "hanzi": "已经",
+      "pinyin": "yǐ jing",
+      "english": "already",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0150",
+      "hanzi": "一起",
+      "pinyin": "yī qǐ",
+      "english": "together",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0151",
+      "hanzi": "意思",
+      "pinyin": "yì si",
+      "english": "meaning",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0152",
+      "hanzi": "阴",
+      "pinyin": "yīn",
+      "english": "cloudy",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0153",
+      "hanzi": "因为",
+      "pinyin": "yīn wèi",
+      "english": "because",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0154",
+      "hanzi": "游泳",
+      "pinyin": "yóu yǒng",
+      "english": "to swim",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0155",
+      "hanzi": "右边",
+      "pinyin": "yòu bian",
+      "english": "right side",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0156",
+      "hanzi": "鱼",
+      "pinyin": "yú",
+      "english": "fish",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0157",
+      "hanzi": "元",
+      "pinyin": "yuán",
+      "english": "yuan",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0158",
+      "hanzi": "远",
+      "pinyin": "yuǎn",
+      "english": "far",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0159",
+      "hanzi": "运动",
+      "pinyin": "yùn dòng",
+      "english": "to work out",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0160",
+      "hanzi": "再",
+      "pinyin": "zài",
+      "english": "again",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0161",
+      "hanzi": "早上",
+      "pinyin": "zǎo shang",
+      "english": "morning",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0162",
+      "hanzi": "张",
+      "pinyin": "zhāng",
+      "english": "piece",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0163",
+      "hanzi": "丈夫",
+      "pinyin": "zhàng fu",
+      "english": "husband",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0164",
+      "hanzi": "找",
+      "pinyin": "zhǎo",
+      "english": "to look for",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0165",
+      "hanzi": "着",
+      "pinyin": "zhuó",
+      "english": "(continuing tense)",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0166",
+      "hanzi": "真",
+      "pinyin": "zhēn",
+      "english": "really",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0167",
+      "hanzi": "正在",
+      "pinyin": "zhèng zài",
+      "english": "currently",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0168",
+      "hanzi": "知道",
+      "pinyin": "zhī dào",
+      "english": "to know",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0169",
+      "hanzi": "准备",
+      "pinyin": "zhǔn bèi",
+      "english": "to prepare",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0170",
+      "hanzi": "自行车",
+      "pinyin": "zì xíng chē",
+      "english": "bicycle",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0171",
+      "hanzi": "走",
+      "pinyin": "zǒu",
+      "english": "to walk",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0172",
+      "hanzi": "最",
+      "pinyin": "zuì",
+      "english": "most",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk2-0173",
+      "hanzi": "左边",
+      "pinyin": "zuǒ bian",
+      "english": "left side",
+      "lesson": "HSK 2"
+    },
+    {
+      "sourceID": "hsk3-0001",
+      "hanzi": "阿姨",
+      "pinyin": "āyí",
+      "english": "aunt or maid",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0002",
+      "hanzi": "啊",
+      "pinyin": "a",
+      "english": "exclamatory particle",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0003",
+      "hanzi": "矮",
+      "pinyin": "ǎi",
+      "english": "short (in height)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0004",
+      "hanzi": "爱好",
+      "pinyin": "àihào",
+      "english": "hobby",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0005",
+      "hanzi": "安静",
+      "pinyin": "ānjìng",
+      "english": "quiet",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0006",
+      "hanzi": "把",
+      "pinyin": "bǎ",
+      "english": "indicate the result of an action",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0007",
+      "hanzi": "班",
+      "pinyin": "bān",
+      "english": "class",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0008",
+      "hanzi": "搬",
+      "pinyin": "bān",
+      "english": "to move",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0009",
+      "hanzi": "办法",
+      "pinyin": "bànfǎ",
+      "english": "method",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0010",
+      "hanzi": "办公室",
+      "pinyin": "bàngōngshì",
+      "english": "office",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0011",
+      "hanzi": "半",
+      "pinyin": "bàn",
+      "english": "half",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0012",
+      "hanzi": "帮忙",
+      "pinyin": "bāngmáng",
+      "english": "to help",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0013",
+      "hanzi": "包",
+      "pinyin": "bāo",
+      "english": "bag",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0014",
+      "hanzi": "饱",
+      "pinyin": "bǎo",
+      "english": "full",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0015",
+      "hanzi": "报纸",
+      "pinyin": "bàozhǐ",
+      "english": "newspaper",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0016",
+      "hanzi": "北方",
+      "pinyin": "běifāng",
+      "english": "north or northern China",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0017",
+      "hanzi": "被",
+      "pinyin": "bèi",
+      "english": "by",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0018",
+      "hanzi": "鼻子",
+      "pinyin": "bízi",
+      "english": "nose",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0019",
+      "hanzi": "比较",
+      "pinyin": "bǐjiào",
+      "english": "to compare",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0020",
+      "hanzi": "比赛",
+      "pinyin": "bǐsài",
+      "english": "match",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0021",
+      "hanzi": "必须",
+      "pinyin": "bìxū",
+      "english": "must",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0022",
+      "hanzi": "变化",
+      "pinyin": "biànhuà",
+      "english": "to change",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0023",
+      "hanzi": "表示",
+      "pinyin": "biǎoshì",
+      "english": "to express",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0024",
+      "hanzi": "表演",
+      "pinyin": "biǎoyǎn",
+      "english": "to perform",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0025",
+      "hanzi": "别人",
+      "pinyin": "biéren",
+      "english": "other people",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0026",
+      "hanzi": "宾馆",
+      "pinyin": "bīngguǎn",
+      "english": "hotel",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0027",
+      "hanzi": "冰箱",
+      "pinyin": "bīngxiāng",
+      "english": "refrigerator",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0028",
+      "hanzi": "才",
+      "pinyin": "cái",
+      "english": "just",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0029",
+      "hanzi": "菜单",
+      "pinyin": "càidān",
+      "english": "menu",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0030",
+      "hanzi": "参加",
+      "pinyin": "cānjiā",
+      "english": "to attend",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0031",
+      "hanzi": "草",
+      "pinyin": "cǎo",
+      "english": "grass",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0032",
+      "hanzi": "层",
+      "pinyin": "céng",
+      "english": "floor",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0033",
+      "hanzi": "差",
+      "pinyin": "chà",
+      "english": "bad (in quality)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0034",
+      "hanzi": "超市",
+      "pinyin": "chāoshì",
+      "english": "supermarket",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0035",
+      "hanzi": "衬衫",
+      "pinyin": "chènshān",
+      "english": "shirt",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0036",
+      "hanzi": "成绩",
+      "pinyin": "chéngjì",
+      "english": "score",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0037",
+      "hanzi": "城市",
+      "pinyin": "chéngshì",
+      "english": "city",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0038",
+      "hanzi": "迟到",
+      "pinyin": "chídào",
+      "english": "to be late",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0039",
+      "hanzi": "出现",
+      "pinyin": "chūxiàn",
+      "english": "to appear",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0040",
+      "hanzi": "除了",
+      "pinyin": "chúle",
+      "english": "besides or except",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0041",
+      "hanzi": "厨房",
+      "pinyin": "chúfáng",
+      "english": "kitchen",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0042",
+      "hanzi": "春",
+      "pinyin": "chūn",
+      "english": "spring",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0043",
+      "hanzi": "词语",
+      "pinyin": "cíyǔ",
+      "english": "word",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0044",
+      "hanzi": "聪明",
+      "pinyin": "cōngming",
+      "english": "smart",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0045",
+      "hanzi": "打扫",
+      "pinyin": "dǎsǎo",
+      "english": "to clean",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0046",
+      "hanzi": "打算",
+      "pinyin": "dǎsuàn",
+      "english": "to plan",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0047",
+      "hanzi": "带",
+      "pinyin": "dài",
+      "english": "to bring",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0048",
+      "hanzi": "担心",
+      "pinyin": "dānxīn",
+      "english": "to worry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0049",
+      "hanzi": "蛋糕",
+      "pinyin": "dàngāo",
+      "english": "cake",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0050",
+      "hanzi": "当然",
+      "pinyin": "dāngrán",
+      "english": "of course",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0051",
+      "hanzi": "地方",
+      "pinyin": "dìfāng",
+      "english": "place",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0052",
+      "hanzi": "地铁",
+      "pinyin": "dìtiě",
+      "english": "metro",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0053",
+      "hanzi": "地图",
+      "pinyin": "dìtú",
+      "english": "map",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0054",
+      "hanzi": "灯",
+      "pinyin": "dēng",
+      "english": "light",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0055",
+      "hanzi": "低",
+      "pinyin": "dī",
+      "english": "low",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0056",
+      "hanzi": "电梯",
+      "pinyin": "diàntī",
+      "english": "elevator",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0057",
+      "hanzi": "电子邮件",
+      "pinyin": "diànzǐ yóujiàn",
+      "english": "email",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0058",
+      "hanzi": "东",
+      "pinyin": "dōng",
+      "english": "east",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0059",
+      "hanzi": "冬",
+      "pinyin": "dōng",
+      "english": "winter",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0060",
+      "hanzi": "懂",
+      "pinyin": "dǒng",
+      "english": "to understand",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0061",
+      "hanzi": "动物",
+      "pinyin": "dòngwù",
+      "english": "animal",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0062",
+      "hanzi": "短",
+      "pinyin": "duǎn",
+      "english": "short",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0063",
+      "hanzi": "段",
+      "pinyin": "duàn",
+      "english": "span of time or distance",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0064",
+      "hanzi": "锻炼",
+      "pinyin": "duànliàn",
+      "english": "to work out",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0065",
+      "hanzi": "多么",
+      "pinyin": "duōme",
+      "english": "how…",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0066",
+      "hanzi": "饿",
+      "pinyin": "è",
+      "english": "hungry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0067",
+      "hanzi": "而且",
+      "pinyin": "érqiě",
+      "english": "moreover",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0068",
+      "hanzi": "耳朵",
+      "pinyin": "ěrduo",
+      "english": "ear",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0069",
+      "hanzi": "发烧",
+      "pinyin": "fāshāo",
+      "english": "to have a fever",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0070",
+      "hanzi": "发现",
+      "pinyin": "fāxiàn",
+      "english": "to discover",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0071",
+      "hanzi": "饭馆",
+      "pinyin": "fànguǎn",
+      "english": "restaurant",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0072",
+      "hanzi": "方便",
+      "pinyin": "fāngbiàn",
+      "english": "convenient",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0073",
+      "hanzi": "放",
+      "pinyin": "fàng",
+      "english": "to put",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0074",
+      "hanzi": "放心",
+      "pinyin": "fàngxīn",
+      "english": "to rest assured",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0075",
+      "hanzi": "分",
+      "pinyin": "fēn",
+      "english": "to divide or separate",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0076",
+      "hanzi": "附近",
+      "pinyin": "fùjìn",
+      "english": "surrounding area",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0077",
+      "hanzi": "复习",
+      "pinyin": "fùxí",
+      "english": "to review",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0078",
+      "hanzi": "敢",
+      "pinyin": "gǎn",
+      "english": "to dare",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0079",
+      "hanzi": "感冒",
+      "pinyin": "gǎnmào",
+      "english": "to have a cold",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0080",
+      "hanzi": "干净",
+      "pinyin": "gānjìng",
+      "english": "clean",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0081",
+      "hanzi": "刚才",
+      "pinyin": "gāngcái",
+      "english": "just now",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0082",
+      "hanzi": "根据",
+      "pinyin": "gēnjù",
+      "english": "according to",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0083",
+      "hanzi": "跟",
+      "pinyin": "gēn",
+      "english": "with",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0084",
+      "hanzi": "更",
+      "pinyin": "gèng",
+      "english": "more",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0085",
+      "hanzi": "公园",
+      "pinyin": "gōngyuán",
+      "english": "park",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0086",
+      "hanzi": "故事",
+      "pinyin": "gùshi",
+      "english": "story",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0087",
+      "hanzi": "刮风",
+      "pinyin": "guā fēng",
+      "english": "to blow (wind)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0088",
+      "hanzi": "关",
+      "pinyin": "guān",
+      "english": "to close or to shut",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0089",
+      "hanzi": "关系",
+      "pinyin": "guānxì",
+      "english": "relation",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0090",
+      "hanzi": "关心",
+      "pinyin": "guānxīn",
+      "english": "to concern",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0091",
+      "hanzi": "关于",
+      "pinyin": "guānyú",
+      "english": "about, regarding",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0092",
+      "hanzi": "国家",
+      "pinyin": "guójiā",
+      "english": "nation",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0093",
+      "hanzi": "果汁",
+      "pinyin": "guǒzhī",
+      "english": "juice",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0094",
+      "hanzi": "过去",
+      "pinyin": "guòqù",
+      "english": "past",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0095",
+      "hanzi": "还是",
+      "pinyin": "háishì",
+      "english": "or",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0096",
+      "hanzi": "害怕",
+      "pinyin": "hàipà",
+      "english": "to fear",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0097",
+      "hanzi": "河",
+      "pinyin": "hé",
+      "english": "river",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0098",
+      "hanzi": "黑板",
+      "pinyin": "hēibǎn",
+      "english": "blackboard",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0099",
+      "hanzi": "护照",
+      "pinyin": "hùzhào",
+      "english": "passport",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0100",
+      "hanzi": "花",
+      "pinyin": "huā",
+      "english": "to spend or to cost",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0101",
+      "hanzi": "花园",
+      "pinyin": "huāyuán",
+      "english": "garden",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0102",
+      "hanzi": "画",
+      "pinyin": "huà",
+      "english": "to draw or to paint",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0103",
+      "hanzi": "坏",
+      "pinyin": "huài",
+      "english": "bad",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0104",
+      "hanzi": "环境",
+      "pinyin": "huánjìng",
+      "english": "environment",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0105",
+      "hanzi": "换",
+      "pinyin": "huàn",
+      "english": "to exchange",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0106",
+      "hanzi": "黄",
+      "pinyin": "huáng",
+      "english": "yellow",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0107",
+      "hanzi": "会议",
+      "pinyin": "huìyì",
+      "english": "meeting",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0108",
+      "hanzi": "或者",
+      "pinyin": "huòzhě",
+      "english": "or",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0109",
+      "hanzi": "机会",
+      "pinyin": "jīhuì",
+      "english": "opportunity or chance",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0110",
+      "hanzi": "极",
+      "pinyin": "jí",
+      "english": "extremely",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0111",
+      "hanzi": "几乎",
+      "pinyin": "jīhū",
+      "english": "almost",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0112",
+      "hanzi": "记得",
+      "pinyin": "jìde",
+      "english": "to remember",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0113",
+      "hanzi": "季节",
+      "pinyin": "jìjié",
+      "english": "season",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0114",
+      "hanzi": "检查",
+      "pinyin": "jiǎnchá",
+      "english": "to check",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0115",
+      "hanzi": "简单",
+      "pinyin": "jiǎndān",
+      "english": "simple",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0116",
+      "hanzi": "见面",
+      "pinyin": "jiànmiàn",
+      "english": "to cry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0117",
+      "hanzi": "健康",
+      "pinyin": "jiànkāng",
+      "english": "healthy",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0118",
+      "hanzi": "讲",
+      "pinyin": "jiǎng",
+      "english": "to say or to speak",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0119",
+      "hanzi": "角",
+      "pinyin": "jiǎo",
+      "english": "1/10 of Chinese Yuan",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0120",
+      "hanzi": "脚",
+      "pinyin": "jiǎo",
+      "english": "foot",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0121",
+      "hanzi": "教",
+      "pinyin": "jiāo",
+      "english": "to teach",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0122",
+      "hanzi": "接",
+      "pinyin": "jiē",
+      "english": "to catch or to pick up",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0123",
+      "hanzi": "街道",
+      "pinyin": "jiēdào",
+      "english": "street",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0124",
+      "hanzi": "节目",
+      "pinyin": "jiémù",
+      "english": "program",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0125",
+      "hanzi": "节日",
+      "pinyin": "jiérì",
+      "english": "festival",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0126",
+      "hanzi": "结婚",
+      "pinyin": "jiéhūn",
+      "english": "to marry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0127",
+      "hanzi": "结束",
+      "pinyin": "jiéshù",
+      "english": "to end",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0128",
+      "hanzi": "解决",
+      "pinyin": "jiějué",
+      "english": "to solve",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0129",
+      "hanzi": "借",
+      "pinyin": "jiè",
+      "english": "to borrow or to lend",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0130",
+      "hanzi": "经常",
+      "pinyin": "jīngcháng",
+      "english": "often",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0131",
+      "hanzi": "经过",
+      "pinyin": "jīngguò",
+      "english": "to pass",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0132",
+      "hanzi": "经理",
+      "pinyin": "jīnglǐ",
+      "english": "manager",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0133",
+      "hanzi": "久",
+      "pinyin": "jiǔ",
+      "english": "long (in time)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0134",
+      "hanzi": "旧",
+      "pinyin": "jiù",
+      "english": "old or used",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0135",
+      "hanzi": "举行",
+      "pinyin": "jǔxíng",
+      "english": "to hold (event)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0136",
+      "hanzi": "句子",
+      "pinyin": "jùzi",
+      "english": "sentence",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0137",
+      "hanzi": "决定",
+      "pinyin": "juédìng",
+      "english": "to decide",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0138",
+      "hanzi": "可爱",
+      "pinyin": "Kě’ài",
+      "english": "cute",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0139",
+      "hanzi": "渴",
+      "pinyin": "kě",
+      "english": "thirsty",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0140",
+      "hanzi": "刻",
+      "pinyin": "kè",
+      "english": "quarter (time)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0141",
+      "hanzi": "客人",
+      "pinyin": "kèren",
+      "english": "guest",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0142",
+      "hanzi": "空调",
+      "pinyin": "kōngtiáo",
+      "english": "air conditioner",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0143",
+      "hanzi": "口",
+      "pinyin": "kǒu",
+      "english": "mouth",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0144",
+      "hanzi": "哭",
+      "pinyin": "kū",
+      "english": "to smile or to laugh",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0145",
+      "hanzi": "裤子",
+      "pinyin": "kùzi",
+      "english": "pants",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0146",
+      "hanzi": "筷子",
+      "pinyin": "kuàizi",
+      "english": "chopsticks",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0147",
+      "hanzi": "蓝",
+      "pinyin": "lán",
+      "english": "blue",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0148",
+      "hanzi": "老",
+      "pinyin": "lǎo",
+      "english": "old (in age)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0149",
+      "hanzi": "了",
+      "pinyin": "le",
+      "english": "aspect particle",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0150",
+      "hanzi": "了解",
+      "pinyin": "liǎojiě",
+      "english": "to know well",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0151",
+      "hanzi": "离开",
+      "pinyin": "líkāi",
+      "english": "to leave",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0152",
+      "hanzi": "礼物",
+      "pinyin": "lǐwù",
+      "english": "gift",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0153",
+      "hanzi": "历史",
+      "pinyin": "lìshǐ",
+      "english": "history",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0154",
+      "hanzi": "脸",
+      "pinyin": "liǎn",
+      "english": "face",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0155",
+      "hanzi": "练习",
+      "pinyin": "liànxí",
+      "english": "to practice",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0156",
+      "hanzi": "辆",
+      "pinyin": "liàng",
+      "english": "for vehicles",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0157",
+      "hanzi": "邻居",
+      "pinyin": "línjū",
+      "english": "neighbor",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0158",
+      "hanzi": "楼",
+      "pinyin": "lóu",
+      "english": "building or floor",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0159",
+      "hanzi": "绿",
+      "pinyin": "lǜ",
+      "english": "green",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0160",
+      "hanzi": "马",
+      "pinyin": "mǎ",
+      "english": "horse",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0161",
+      "hanzi": "马上",
+      "pinyin": "mǎshàng",
+      "english": "immediately",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0162",
+      "hanzi": "卖",
+      "pinyin": "mài",
+      "english": "to sell",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0163",
+      "hanzi": "帽子",
+      "pinyin": "màozi",
+      "english": "hat or cap",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0164",
+      "hanzi": "门",
+      "pinyin": "mén",
+      "english": "door",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0165",
+      "hanzi": "米",
+      "pinyin": "mǐ",
+      "english": "meter",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0166",
+      "hanzi": "面包",
+      "pinyin": "miànbāo",
+      "english": "bread",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0167",
+      "hanzi": "面条",
+      "pinyin": "miàntiáo",
+      "english": "noodle",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0168",
+      "hanzi": "明白",
+      "pinyin": "míngbai",
+      "english": "to understand",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0169",
+      "hanzi": "拿",
+      "pinyin": "ná",
+      "english": "to hold or to take",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0170",
+      "hanzi": "那儿",
+      "pinyin": "nà/nàr",
+      "english": "that/there",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0171",
+      "hanzi": "奶奶",
+      "pinyin": "nǎinai",
+      "english": "grandma",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0172",
+      "hanzi": "南",
+      "pinyin": "nán",
+      "english": "south",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0173",
+      "hanzi": "难",
+      "pinyin": "nán",
+      "english": "difficult",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0174",
+      "hanzi": "难过",
+      "pinyin": "nánguò",
+      "english": "sad",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0175",
+      "hanzi": "年级",
+      "pinyin": "niánjí",
+      "english": "grade",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0176",
+      "hanzi": "年轻",
+      "pinyin": "niánqīng",
+      "english": "young",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0177",
+      "hanzi": "鸟",
+      "pinyin": "niǎo",
+      "english": "bird",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0178",
+      "hanzi": "努力",
+      "pinyin": "nǔlì",
+      "english": "studious or hard working",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0179",
+      "hanzi": "爬山",
+      "pinyin": "pá shān",
+      "english": "to climb mountain",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0180",
+      "hanzi": "盘子",
+      "pinyin": "pánzi",
+      "english": "plate",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0181",
+      "hanzi": "胖",
+      "pinyin": "pàng",
+      "english": "fat",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0182",
+      "hanzi": "啤酒",
+      "pinyin": "píjiǔ",
+      "english": "beer",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0183",
+      "hanzi": "葡萄",
+      "pinyin": "pútáo",
+      "english": "grape",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0184",
+      "hanzi": "普通话",
+      "pinyin": "pǔtōnghuà",
+      "english": "(standard) Mandarin",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0185",
+      "hanzi": "其实",
+      "pinyin": "qíshí",
+      "english": "actually",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0186",
+      "hanzi": "其他",
+      "pinyin": "qítā",
+      "english": "other",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0187",
+      "hanzi": "奇怪",
+      "pinyin": "qíguài",
+      "english": "strange",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0188",
+      "hanzi": "骑",
+      "pinyin": "qí",
+      "english": "to ride",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0189",
+      "hanzi": "铅笔",
+      "pinyin": "qiānbǐ",
+      "english": "pencil",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0190",
+      "hanzi": "清楚",
+      "pinyin": "qīngchu",
+      "english": "clear",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0191",
+      "hanzi": "秋",
+      "pinyin": "qiū",
+      "english": "autumn",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0192",
+      "hanzi": "裙子",
+      "pinyin": "qúnzi",
+      "english": "skirt",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0193",
+      "hanzi": "然后",
+      "pinyin": "ránhòu",
+      "english": "then, afterwards",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0194",
+      "hanzi": "热情",
+      "pinyin": "rèqíng",
+      "english": "enthusiastic",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0195",
+      "hanzi": "认为",
+      "pinyin": "rènwéi",
+      "english": "to think or to consider",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0196",
+      "hanzi": "认真",
+      "pinyin": "rènzhēn",
+      "english": "serious or careful",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0197",
+      "hanzi": "容易",
+      "pinyin": "róngyì",
+      "english": "easy",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0198",
+      "hanzi": "伞",
+      "pinyin": "sǎn",
+      "english": "umbrella",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0199",
+      "hanzi": "上网",
+      "pinyin": "shàngwǎng",
+      "english": "to get online",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0200",
+      "hanzi": "生气",
+      "pinyin": "shēngqì",
+      "english": "to get angry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0201",
+      "hanzi": "声音",
+      "pinyin": "shēngyīn",
+      "english": "sound or voice",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0202",
+      "hanzi": "使",
+      "pinyin": "shǐ",
+      "english": "to make",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0203",
+      "hanzi": "世界",
+      "pinyin": "shìjiè",
+      "english": "world",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0204",
+      "hanzi": "手机",
+      "pinyin": "shǒujī",
+      "english": "mobile phone",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0205",
+      "hanzi": "瘦",
+      "pinyin": "shòu",
+      "english": "thin",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0206",
+      "hanzi": "叔叔",
+      "pinyin": "shūshu",
+      "english": "uncle",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0207",
+      "hanzi": "舒服",
+      "pinyin": "shūfu",
+      "english": "comfortable",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0208",
+      "hanzi": "树",
+      "pinyin": "shù",
+      "english": "tree",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0209",
+      "hanzi": "数学",
+      "pinyin": "shùxué",
+      "english": "math",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0210",
+      "hanzi": "刷牙",
+      "pinyin": "shuāyá",
+      "english": "to brush teeth",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0211",
+      "hanzi": "双",
+      "pinyin": "shuāng",
+      "english": "pair",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0212",
+      "hanzi": "水平",
+      "pinyin": "shuǐpíng",
+      "english": "level or standard",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0213",
+      "hanzi": "司机",
+      "pinyin": "sījī",
+      "english": "driver",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0214",
+      "hanzi": "太阳",
+      "pinyin": "tàiyáng",
+      "english": "sun",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0215",
+      "hanzi": "糖",
+      "pinyin": "táng",
+      "english": "candy or sugar",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0216",
+      "hanzi": "特别",
+      "pinyin": "tèbié",
+      "english": "special",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0217",
+      "hanzi": "疼",
+      "pinyin": "téng",
+      "english": "to ache",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0218",
+      "hanzi": "提高",
+      "pinyin": "tígāo",
+      "english": "to improve",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0219",
+      "hanzi": "体育",
+      "pinyin": "tǐyù",
+      "english": "sports or physical education",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0220",
+      "hanzi": "甜",
+      "pinyin": "tián",
+      "english": "sweet",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0221",
+      "hanzi": "条",
+      "pinyin": "tiáo",
+      "english": "for long objects",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0222",
+      "hanzi": "同事",
+      "pinyin": "tóngshì",
+      "english": "colleague",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0223",
+      "hanzi": "同意",
+      "pinyin": "tóngyì",
+      "english": "to agree",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0224",
+      "hanzi": "头发",
+      "pinyin": "tóufa",
+      "english": "hair",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0225",
+      "hanzi": "突然",
+      "pinyin": "tūrán",
+      "english": "suddenly",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0226",
+      "hanzi": "图书馆",
+      "pinyin": "túshūguǎn",
+      "english": "library",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0227",
+      "hanzi": "腿",
+      "pinyin": "tuǐ",
+      "english": "leg",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0228",
+      "hanzi": "完成",
+      "pinyin": "wánchéng",
+      "english": "to complete or accomplish",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0229",
+      "hanzi": "碗",
+      "pinyin": "wǎn",
+      "english": "bowl",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0230",
+      "hanzi": "万",
+      "pinyin": "wàn",
+      "english": "ten thousand",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0231",
+      "hanzi": "忘记",
+      "pinyin": "wàngjì",
+      "english": "to forget",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0232",
+      "hanzi": "为",
+      "pinyin": "wèi",
+      "english": "for (sb/sth)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0233",
+      "hanzi": "为了",
+      "pinyin": "wèile",
+      "english": "for (purpose)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0234",
+      "hanzi": "位",
+      "pinyin": "wèi",
+      "english": "counter for people (formal)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0235",
+      "hanzi": "文化",
+      "pinyin": "wénhuà",
+      "english": "culture",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0236",
+      "hanzi": "西",
+      "pinyin": "xī",
+      "english": "west",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0237",
+      "hanzi": "习惯",
+      "pinyin": "xíguàn",
+      "english": "habit",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0238",
+      "hanzi": "洗手间",
+      "pinyin": "xǐshǒujiān",
+      "english": "washroom",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0239",
+      "hanzi": "洗澡",
+      "pinyin": "xǐzǎo",
+      "english": "to bathe",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0240",
+      "hanzi": "夏",
+      "pinyin": "xià",
+      "english": "summer",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0241",
+      "hanzi": "先",
+      "pinyin": "xiān",
+      "english": "first",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0242",
+      "hanzi": "相同",
+      "pinyin": "xiāngtóng",
+      "english": "same",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0243",
+      "hanzi": "相信",
+      "pinyin": "xiāngxìn",
+      "english": "to believe",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0244",
+      "hanzi": "香蕉",
+      "pinyin": "xiāngjiāo",
+      "english": "banana",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0245",
+      "hanzi": "像",
+      "pinyin": "xiàng",
+      "english": "as or like",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0246",
+      "hanzi": "小心",
+      "pinyin": "xiǎoxīn",
+      "english": "to be careful",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0247",
+      "hanzi": "校长",
+      "pinyin": "xiàozhǎng",
+      "english": "head of a school",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0248",
+      "hanzi": "鞋",
+      "pinyin": "xié",
+      "english": "shoe",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0249",
+      "hanzi": "新闻",
+      "pinyin": "xīnwén",
+      "english": "news",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0250",
+      "hanzi": "新鲜",
+      "pinyin": "xīnxiān",
+      "english": "fresh",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0251",
+      "hanzi": "信",
+      "pinyin": "xìn",
+      "english": "letter",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0252",
+      "hanzi": "行李箱",
+      "pinyin": "xínglǐxiāng",
+      "english": "suitcase",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0253",
+      "hanzi": "兴趣",
+      "pinyin": "xìngqù",
+      "english": "interest",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0254",
+      "hanzi": "熊猫",
+      "pinyin": "xióngmāo",
+      "english": "panda",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0255",
+      "hanzi": "需要",
+      "pinyin": "xūyào",
+      "english": "to need",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0256",
+      "hanzi": "选择",
+      "pinyin": "xuǎnzé",
+      "english": "to choose",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0257",
+      "hanzi": "眼镜",
+      "pinyin": "yǎnjìng",
+      "english": "glasses",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0258",
+      "hanzi": "要求",
+      "pinyin": "yāoqiú",
+      "english": "to require",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0259",
+      "hanzi": "爷爷",
+      "pinyin": "yéye",
+      "english": "grandpa",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0260",
+      "hanzi": "一般",
+      "pinyin": "yìbān",
+      "english": "generally",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0261",
+      "hanzi": "一边",
+      "pinyin": "yìbiān",
+      "english": "at the same time",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0262",
+      "hanzi": "一定",
+      "pinyin": "yídìng",
+      "english": "definitely",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0263",
+      "hanzi": "一共",
+      "pinyin": "yígòng",
+      "english": "altogether",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0264",
+      "hanzi": "一会儿",
+      "pinyin": "yíhuìr",
+      "english": "a short while",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0265",
+      "hanzi": "一样",
+      "pinyin": "yíyàng",
+      "english": "same",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0266",
+      "hanzi": "一直",
+      "pinyin": "yìzhí",
+      "english": "constantly",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0267",
+      "hanzi": "以后",
+      "pinyin": "yǐhòu",
+      "english": "after, later",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0268",
+      "hanzi": "以前",
+      "pinyin": "yǐqián",
+      "english": "before, ago",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0269",
+      "hanzi": "以为",
+      "pinyin": "yǐwéi",
+      "english": "to think (wrongly)",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0270",
+      "hanzi": "音乐",
+      "pinyin": "yīnyuè",
+      "english": "music",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0271",
+      "hanzi": "银行",
+      "pinyin": "yínháng",
+      "english": "bank",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0272",
+      "hanzi": "应该",
+      "pinyin": "yīnggāi",
+      "english": "should",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0273",
+      "hanzi": "影响",
+      "pinyin": "yǐngxiǎng",
+      "english": "to affect",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0274",
+      "hanzi": "用",
+      "pinyin": "yòng",
+      "english": "to use",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0275",
+      "hanzi": "游戏",
+      "pinyin": "yóuxì",
+      "english": "game",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0276",
+      "hanzi": "有名",
+      "pinyin": "yǒumíng",
+      "english": "famous",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0277",
+      "hanzi": "又",
+      "pinyin": "yòu",
+      "english": "again",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0278",
+      "hanzi": "遇到",
+      "pinyin": "yùdào",
+      "english": "to meet",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0279",
+      "hanzi": "愿意",
+      "pinyin": "yuànyì",
+      "english": "to be willing to",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0280",
+      "hanzi": "月亮",
+      "pinyin": "yuèliang",
+      "english": "moon",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0281",
+      "hanzi": "越",
+      "pinyin": "yuè",
+      "english": "more",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0282",
+      "hanzi": "云",
+      "pinyin": "yún",
+      "english": "cloud",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0283",
+      "hanzi": "站",
+      "pinyin": "zhàn",
+      "english": "to stand",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0284",
+      "hanzi": "照顾",
+      "pinyin": "zhàogù",
+      "english": "to look after",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0285",
+      "hanzi": "照片",
+      "pinyin": "zhàopiàn",
+      "english": "photo",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0286",
+      "hanzi": "照相机",
+      "pinyin": "zhàoxiàngjī",
+      "english": "camera",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0287",
+      "hanzi": "这儿",
+      "pinyin": "zhè/zhèr",
+      "english": "this/here",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0288",
+      "hanzi": "着急",
+      "pinyin": "zháojí",
+      "english": "to worry",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0289",
+      "hanzi": "只",
+      "pinyin": "zhǐ",
+      "english": "only",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0290",
+      "hanzi": "中间",
+      "pinyin": "zhōngjiān",
+      "english": "middle",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0291",
+      "hanzi": "终于",
+      "pinyin": "zhōngyú",
+      "english": "finally",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0292",
+      "hanzi": "种",
+      "pinyin": "zhǒng",
+      "english": "type",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0293",
+      "hanzi": "重要",
+      "pinyin": "zhòngyào",
+      "english": "important",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0294",
+      "hanzi": "周末",
+      "pinyin": "zhōumò",
+      "english": "weekend",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0295",
+      "hanzi": "主要",
+      "pinyin": "zhǔyào",
+      "english": "main",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0296",
+      "hanzi": "注意",
+      "pinyin": "zhùyì",
+      "english": "to pay attention to",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0297",
+      "hanzi": "祝",
+      "pinyin": "zhù",
+      "english": "to wish",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0298",
+      "hanzi": "字典",
+      "pinyin": "zìdiǎn",
+      "english": "dictionary",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0299",
+      "hanzi": "自己",
+      "pinyin": "zìjǐ",
+      "english": "oneself",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0300",
+      "hanzi": "总是",
+      "pinyin": "zǒngshì",
+      "english": "always",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0301",
+      "hanzi": "最近",
+      "pinyin": "zuìjìn",
+      "english": "recent time",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0302",
+      "hanzi": "作业",
+      "pinyin": "zuòyè",
+      "english": "homework",
+      "lesson": "HSK 3"
+    },
+    {
+      "sourceID": "hsk3-0303",
+      "hanzi": "作用",
+      "pinyin": "zuòyòng",
+      "english": "effect",
+      "lesson": "HSK 3"
+    }
   ]
 }

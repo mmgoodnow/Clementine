@@ -40,9 +40,9 @@ enum SeedImporter {
         let existingInstall = try context.fetch(installDescriptor).first
         guard existingInstall?.version != deck.version else { return }
 
-        for item in deck.items {
+        for (index, item) in deck.items.enumerated() {
             try upsertNote(item: item, deckID: deck.deckID, context: context, now: now)
-            try ensureCards(for: item, context: context, now: now)
+            try ensureCards(for: item, context: context, now: now, order: index)
         }
 
         if let existingInstall {
@@ -92,7 +92,8 @@ enum SeedImporter {
     private static func ensureCards(
         for item: SeedVocabularyItem,
         context: ModelContext,
-        now: Date
+        now: Date,
+        order: Int
     ) throws {
         for kind in [CardKind.hanziToMeaning, .hanziToPinyin, .recall] {
             let cardKey = "\(item.sourceID)#\(kind.rawValue)"
@@ -101,7 +102,8 @@ enum SeedImporter {
             )
 
             if try context.fetch(descriptor).isEmpty {
-                context.insert(StudyCard(noteSourceID: item.sourceID, kind: kind, dueAt: now))
+                let orderedDueAt = now.addingTimeInterval(Double(order))
+                context.insert(StudyCard(noteSourceID: item.sourceID, kind: kind, dueAt: orderedDueAt))
             }
         }
     }

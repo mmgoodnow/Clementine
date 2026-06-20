@@ -145,7 +145,7 @@ enum AdaptiveSessionPolicy {
                 )
             )
 
-        let selected = dueReviews + Array(newCards)
+        let selected = forceNewCards ? Array(newCards) + dueReviews : dueReviews + Array(newCards)
         return SessionDecision(
             orderedCards: selected,
             shouldStopNaturally: selected.isEmpty

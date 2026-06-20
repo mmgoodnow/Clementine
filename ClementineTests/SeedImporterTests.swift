@@ -37,4 +37,30 @@ final class SeedImporterTests: XCTestCase {
         XCTAssertEqual(cards.count, 3)
         XCTAssertEqual(installs.map(\.deckID), ["test"])
     }
+
+    func testSeedImportOrdersNewCardsByDeckOrder() throws {
+        let container = try ClementineModelContainer.make(inMemory: true)
+        let context = container.mainContext
+        let now = Date(timeIntervalSince1970: 1_000)
+        let deck = SeedDeck(
+            deckID: "test",
+            version: 1,
+            items: [
+                SeedVocabularyItem(sourceID: "test-1", hanzi: "爱", pinyin: "ài", english: "love", lesson: "HSK 1"),
+                SeedVocabularyItem(sourceID: "test-2", hanzi: "吧", pinyin: "ba", english: "suggestion particle", lesson: "HSK 2"),
+                SeedVocabularyItem(sourceID: "test-3", hanzi: "阿姨", pinyin: "āyí", english: "aunt", lesson: "HSK 3")
+            ]
+        )
+
+        try SeedImporter.installIfNeeded(deck: deck, context: context, now: now)
+
+        let cards = try context.fetch(FetchDescriptor<StudyCard>()).sorted { lhs, rhs in
+            if lhs.dueAt == rhs.dueAt { return lhs.cardKey < rhs.cardKey }
+            return lhs.dueAt < rhs.dueAt
+        }
+
+        XCTAssertEqual(cards.prefix(3).map(\.noteSourceID), ["test-1", "test-1", "test-1"])
+        XCTAssertEqual(cards.dropFirst(3).prefix(3).map(\.noteSourceID), ["test-2", "test-2", "test-2"])
+        XCTAssertEqual(cards.dropFirst(6).prefix(3).map(\.noteSourceID), ["test-3", "test-3", "test-3"])
+    }
 }

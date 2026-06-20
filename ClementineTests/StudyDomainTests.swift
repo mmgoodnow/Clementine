@@ -287,4 +287,25 @@ final class StudyDomainTests: XCTestCase {
             [newCard]
         )
     }
+
+    func testForcedContinuePrioritizesNewCardsOverDueReviews() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let dueReview = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now.addingTimeInterval(-60),
+            isNew: false,
+            recentLapses: 0
+        )
+        let newCard = SessionCardCandidate(id: UUID(), dueAt: now, isNew: true, recentLapses: 0)
+
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: [dueReview, newCard],
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now,
+            forceNewCards: true
+        )
+
+        XCTAssertEqual(decision.orderedCards.first, newCard)
+    }
 }
