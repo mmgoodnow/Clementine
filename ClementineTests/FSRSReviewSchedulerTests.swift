@@ -11,5 +11,19 @@ final class FSRSReviewSchedulerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(result.dueAt.timeIntervalSince1970, now.timeIntervalSince1970)
         XCTAssertGreaterThanOrEqual(result.scheduledDays, 0)
         XCTAssertFalse(result.state.isEmpty)
+        XCTAssertEqual(result.desiredRetention, 0.90)
+    }
+
+    func testReviewUsesProvidedDesiredRetention() throws {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let result = try FSRSReviewScheduler.review(
+            cardData: nil,
+            grade: .good,
+            desiredRetention: 0.94,
+            now: now
+        )
+
+        XCTAssertEqual(result.desiredRetention, 0.94)
     }
 }

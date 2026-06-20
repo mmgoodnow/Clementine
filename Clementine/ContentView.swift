@@ -82,6 +82,17 @@ struct ContentView: View {
         return Double(correct) / Double(recent.count)
     }
 
+    private func currentDesiredRetention(now: Date) -> Double {
+        AdaptiveSessionPolicy.desiredRetention(
+            pace: settings?.learningPace ?? .balanced,
+            forecastedReviewLoad: AdaptiveSessionPolicy.forecastedReviewLoad(
+                from: sessionCandidates(),
+                now: now
+            ),
+            recentAccuracy: recentAccuracy
+        )
+    }
+
     private var activeCard: StudyCard? {
         guard let activeCardKey else { return nil }
         return cards.first { $0.cardKey == activeCardKey }
@@ -123,16 +134,7 @@ struct ContentView: View {
 
     private func moveToNextCard(forceNewCards: Bool = false) {
         let now = Date()
-        let candidates = cards
-            .filter { !$0.isSuspended }
-            .map { card in
-                SessionCardCandidate(
-                    id: card.id,
-                    dueAt: card.dueAt,
-                    isNew: card.fsrsCardData == nil,
-                    recentLapses: recentLapses(for: card.cardKey)
-                )
-            }
+        let candidates = sessionCandidates()
 
         let decision = AdaptiveSessionPolicy.chooseCards(
             from: candidates,
@@ -148,6 +150,19 @@ struct ContentView: View {
         selectedChoice = nil
         isAnswerRevealed = false
         responseStartedAt = now
+    }
+
+    private func sessionCandidates() -> [SessionCardCandidate] {
+        cards
+            .filter { !$0.isSuspended }
+            .map { card in
+                SessionCardCandidate(
+                    id: card.id,
+                    dueAt: card.dueAt,
+                    isNew: card.fsrsCardData == nil,
+                    recentLapses: recentLapses(for: card.cardKey)
+                )
+            }
     }
 
     private func continuePastNaturalStop() {
@@ -210,10 +225,16 @@ struct ContentView: View {
         responseSeconds: Double
     ) {
         do {
-            let review = try FSRSReviewScheduler.review(cardData: card.fsrsCardData, grade: grade)
+            let now = Date()
+            let review = try FSRSReviewScheduler.review(
+                cardData: card.fsrsCardData,
+                grade: grade,
+                desiredRetention: currentDesiredRetention(now: now),
+                now: now
+            )
             card.fsrsCardData = review.cardData
             card.dueAt = review.dueAt
-            card.updatedAt = Date()
+            card.updatedAt = now
 
             modelContext.insert(
                 ReviewEvent(

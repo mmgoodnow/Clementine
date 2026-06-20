@@ -14,22 +14,30 @@ enum FSRSReviewScheduler {
         return decoder
     }()
 
-    private static let scheduler = FSRS(
-        parameters: FSRSParameters(w: FSRSDefaults.defaultWv6)
-    )
-
     static func initialCardData(now: Date = Date()) throws -> Data {
         try encoder.encode(Card(due: now))
     }
 
-    static func review(cardData: Data?, grade: ReviewGrade, now: Date = Date()) throws -> ScheduledReview {
+    static func review(
+        cardData: Data?,
+        grade: ReviewGrade,
+        desiredRetention: Double = 0.90,
+        now: Date = Date()
+    ) throws -> ScheduledReview {
         let card = try decodedCard(from: cardData, now: now)
+        let scheduler = FSRS(
+            parameters: FSRSParameters(
+                requestRetention: min(max(desiredRetention, 0.70), 0.97),
+                w: FSRSDefaults.defaultWv6
+            )
+        )
         let result = try scheduler.next(card: card, now: now, grade: grade.fsrsRating)
         return ScheduledReview(
             cardData: try encoder.encode(result.card),
             dueAt: result.card.due,
             scheduledDays: result.card.scheduledDays,
-            state: result.card.state.stringValue
+            state: result.card.state.stringValue,
+            desiredRetention: desiredRetention
         )
     }
 
@@ -44,6 +52,7 @@ struct ScheduledReview: Equatable {
     var dueAt: Date
     var scheduledDays: Double
     var state: String
+    var desiredRetention: Double
 }
 
 private extension ReviewGrade {

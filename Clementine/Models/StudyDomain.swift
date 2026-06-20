@@ -39,11 +39,19 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var targetRetention: Double {
+    var baselineRetention: Double {
         switch self {
-        case .low: 0.90
+        case .low: 0.88
         case .balanced: 0.90
-        case .high: 0.90
+        case .high: 0.92
+        }
+    }
+
+    var retentionRange: ClosedRange<Double> {
+        switch self {
+        case .low: 0.84...0.90
+        case .balanced: 0.86...0.92
+        case .high: 0.88...0.95
         }
     }
 }
@@ -94,6 +102,8 @@ struct SessionDecision: Equatable {
 }
 
 enum AdaptiveSessionPolicy {
+    private static let forecastHorizonDays = 7
+
     static func chooseCards(
         from candidates: [SessionCardCandidate],
         pace: LearningPace,
@@ -101,7 +111,7 @@ enum AdaptiveSessionPolicy {
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
-        let horizonEnd = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
+        let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
             .sorted { lhs, rhs in
@@ -110,10 +120,6 @@ enum AdaptiveSessionPolicy {
                 }
                 return lhs.dueAt < rhs.dueAt
             }
-
-        let forecastedReviewLoad = candidates.filter {
-            !$0.isNew && $0.dueAt <= horizonEnd
-        }.count
 
         let newCards = candidates
             .filter(\.isNew)
@@ -134,6 +140,41 @@ enum AdaptiveSessionPolicy {
         )
     }
 
+    static func desiredRetention(
+        pace: LearningPace,
+        forecastedReviewLoad: Int,
+        recentAccuracy: Double
+    ) -> Double {
+        let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.99)
+        let loadRatio = Double(forecastedReviewLoad) / Double(max(1, pace.reviewLoadBudget))
+        let accuracyAdjustment = clamp(
+            (pace.baselineRetention - normalizedAccuracy) * 0.25,
+            min: -0.015,
+            max: 0.025
+        )
+        let loadAdjustment: Double
+        if loadRatio > 0.85 {
+            loadAdjustment = -min(0.045, (loadRatio - 0.85) * 0.18)
+        } else if loadRatio < 0.45 {
+            loadAdjustment = min(0.02, (0.45 - loadRatio) * 0.05)
+        } else {
+            loadAdjustment = 0
+        }
+
+        return clamp(
+            pace.baselineRetention + accuracyAdjustment + loadAdjustment,
+            min: pace.retentionRange.lowerBound,
+            max: pace.retentionRange.upperBound
+        )
+    }
+
+    static func forecastedReviewLoad(from candidates: [SessionCardCandidate], now: Date) -> Int {
+        let horizonEnd = Calendar.current.date(byAdding: .day, value: forecastHorizonDays, to: now) ?? now
+        return candidates.filter {
+            !$0.isNew && $0.dueAt <= horizonEnd
+        }.count
+    }
+
     private static func newCardAllowance(
         pace: LearningPace,
         forecastedReviewLoad: Int,
@@ -149,9 +190,17 @@ enum AdaptiveSessionPolicy {
         let expectedReviewCost =
             normalizedAccuracy * expectedRecallCost +
             (1 - normalizedAccuracy) * expectedForgetCost
-        let retentionPressure = pace.targetRetention / normalizedAccuracy
+        let retentionPressure = desiredRetention(
+            pace: pace,
+            forecastedReviewLoad: forecastedReviewLoad,
+            recentAccuracy: recentAccuracy
+        ) / normalizedAccuracy
         let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
 
         return max(forceNewCards ? 1 : 0, Int(floor(Double(availableLoad) / expectedNewCardLoad)))
+    }
+
+    private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
+        min(max(value, lowerBound), upperBound)
     }
 }

@@ -87,6 +87,59 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(balanced, high)
     }
 
+    func testLearningPaceControlsHiddenDesiredRetention() {
+        let low = AdaptiveSessionPolicy.desiredRetention(
+            pace: .low,
+            forecastedReviewLoad: 6,
+            recentAccuracy: 0.9
+        )
+        let balanced = AdaptiveSessionPolicy.desiredRetention(
+            pace: .balanced,
+            forecastedReviewLoad: 6,
+            recentAccuracy: 0.9
+        )
+        let high = AdaptiveSessionPolicy.desiredRetention(
+            pace: .high,
+            forecastedReviewLoad: 6,
+            recentAccuracy: 0.9
+        )
+
+        XCTAssertLessThan(low, balanced)
+        XCTAssertLessThan(balanced, high)
+    }
+
+    func testForecastedReviewLoadLowersHiddenDesiredRetention() {
+        let lightLoad = AdaptiveSessionPolicy.desiredRetention(
+            pace: .balanced,
+            forecastedReviewLoad: 4,
+            recentAccuracy: 0.9
+        )
+        let heavyLoad = AdaptiveSessionPolicy.desiredRetention(
+            pace: .balanced,
+            forecastedReviewLoad: 60,
+            recentAccuracy: 0.9
+        )
+
+        XCTAssertLessThan(heavyLoad, lightLoad)
+        XCTAssertGreaterThanOrEqual(heavyLoad, LearningPace.balanced.retentionRange.lowerBound)
+    }
+
+    func testLowAccuracyRaisesRetentionPressureWhenLoadAllows() {
+        let highAccuracy = AdaptiveSessionPolicy.desiredRetention(
+            pace: .balanced,
+            forecastedReviewLoad: 12,
+            recentAccuracy: 0.95
+        )
+        let lowAccuracy = AdaptiveSessionPolicy.desiredRetention(
+            pace: .balanced,
+            forecastedReviewLoad: 12,
+            recentAccuracy: 0.65
+        )
+
+        XCTAssertGreaterThan(lowAccuracy, highAccuracy)
+        XCTAssertLessThanOrEqual(lowAccuracy, LearningPace.balanced.retentionRange.upperBound)
+    }
+
     func testLowerAccuracyReducesButDoesNotZeroNewCardAllowance() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = (0..<30).map { index in
