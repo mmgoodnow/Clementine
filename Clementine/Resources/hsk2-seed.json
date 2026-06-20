@@ -1,0 +1,30 @@
+{
+  "deckID": "hsk2-seed",
+  "version": 1,
+  "items": [
+    { "sourceID": "hsk2-0001", "hanzi": "爱", "pinyin": "ài", "english": "love", "lesson": "Core" },
+    { "sourceID": "hsk2-0002", "hanzi": "八", "pinyin": "bā", "english": "eight", "lesson": "Numbers" },
+    { "sourceID": "hsk2-0003", "hanzi": "爸爸", "pinyin": "bàba", "english": "father", "lesson": "Family" },
+    { "sourceID": "hsk2-0004", "hanzi": "杯子", "pinyin": "bēizi", "english": "cup; glass", "lesson": "Objects" },
+    { "sourceID": "hsk2-0005", "hanzi": "北京", "pinyin": "Běijīng", "english": "Beijing", "lesson": "Places" },
+    { "sourceID": "hsk2-0006", "hanzi": "本", "pinyin": "běn", "english": "measure word for books", "lesson": "Measure Words" },
+    { "sourceID": "hsk2-0007", "hanzi": "不客气", "pinyin": "bú kèqi", "english": "you are welcome", "lesson": "Phrases" },
+    { "sourceID": "hsk2-0008", "hanzi": "菜", "pinyin": "cài", "english": "dish; vegetable", "lesson": "Food" },
+    { "sourceID": "hsk2-0009", "hanzi": "茶", "pinyin": "chá", "english": "tea", "lesson": "Food" },
+    { "sourceID": "hsk2-0010", "hanzi": "吃", "pinyin": "chī", "english": "eat", "lesson": "Verbs" },
+    { "sourceID": "hsk2-0011", "hanzi": "出租车", "pinyin": "chūzūchē", "english": "taxi", "lesson": "Travel" },
+    { "sourceID": "hsk2-0012", "hanzi": "打电话", "pinyin": "dǎ diànhuà", "english": "make a phone call", "lesson": "Verbs" },
+    { "sourceID": "hsk2-0013", "hanzi": "大", "pinyin": "dà", "english": "big", "lesson": "Adjectives" },
+    { "sourceID": "hsk2-0014", "hanzi": "的", "pinyin": "de", "english": "possessive particle", "lesson": "Grammar" },
+    { "sourceID": "hsk2-0015", "hanzi": "点", "pinyin": "diǎn", "english": "o'clock; point", "lesson": "Time" },
+    { "sourceID": "hsk2-0016", "hanzi": "电脑", "pinyin": "diànnǎo", "english": "computer", "lesson": "Objects" },
+    { "sourceID": "hsk2-0017", "hanzi": "电视", "pinyin": "diànshì", "english": "television", "lesson": "Objects" },
+    { "sourceID": "hsk2-0018", "hanzi": "电影", "pinyin": "diànyǐng", "english": "movie", "lesson": "Entertainment" },
+    { "sourceID": "hsk2-0019", "hanzi": "东西", "pinyin": "dōngxi", "english": "thing", "lesson": "Objects" },
+    { "sourceID": "hsk2-0020", "hanzi": "都", "pinyin": "dōu", "english": "all; both", "lesson": "Grammar" },
+    { "sourceID": "hsk2-0021", "hanzi": "读", "pinyin": "dú", "english": "read", "lesson": "Verbs" },
+    { "sourceID": "hsk2-0022", "hanzi": "对不起", "pinyin": "duìbuqǐ", "english": "sorry", "lesson": "Phrases" },
+    { "sourceID": "hsk2-0023", "hanzi": "多", "pinyin": "duō", "english": "many; much", "lesson": "Adjectives" },
+    { "sourceID": "hsk2-0024", "hanzi": "多少", "pinyin": "duōshao", "english": "how many; how much", "lesson": "Questions" }
+  ]
+}

@@ -11,7 +11,15 @@
 		51DB1DE62BE73FD3000C7ABE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1DE52BE73FD3000C7ABE /* ContentView.swift */; };
 		51DB1DEA2BE73FD4000C7ABE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51DB1DE92BE73FD4000C7ABE /* Assets.xcassets */; };
 		51DB1DEE2BE73FD4000C7ABE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51DB1DED2BE73FD4000C7ABE /* Preview Assets.xcassets */; };
+		C10000000000000000000001 /* StudyDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000011 /* StudyDomain.swift */; };
+		C10000000000000000000002 /* PersistenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000012 /* PersistenceModels.swift */; };
+		C10000000000000000000003 /* SeedDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000013 /* SeedDeck.swift */; };
+		C10000000000000000000004 /* FSRSReviewScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000014 /* FSRSReviewScheduler.swift */; };
+		C10000000000000000000005 /* hsk2-seed.json in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000015 /* hsk2-seed.json */; };
+		C10000000000000000000006 /* FSRS in Frameworks */ = {isa = PBXBuildFile; productRef = C10000000000000000000031 /* FSRS */; };
 		51DB1DF92BE73FD4000C7ABE /* ClementineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */; };
+		C10000000000000000000007 /* StudyDomainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000016 /* StudyDomainTests.swift */; };
+		C10000000000000000000008 /* FSRSReviewSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */; };
 		51DB1E032BE73FD4000C7ABE /* ClementineUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1E022BE73FD4000C7ABE /* ClementineUITests.swift */; };
 		51DB1E052BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1E042BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
@@ -41,8 +49,15 @@
 		51DB1DEB2BE73FD4000C7ABE /* Clementine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Clementine.entitlements; sourceTree = "<group>"; };
 		51DB1DED2BE73FD4000C7ABE /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		51DB1DEF2BE73FD4000C7ABE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C10000000000000000000011 /* StudyDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyDomain.swift; sourceTree = "<group>"; };
+		C10000000000000000000012 /* PersistenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceModels.swift; sourceTree = "<group>"; };
+		C10000000000000000000013 /* SeedDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedDeck.swift; sourceTree = "<group>"; };
+		C10000000000000000000014 /* FSRSReviewScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSRSReviewScheduler.swift; sourceTree = "<group>"; };
+		C10000000000000000000015 /* hsk2-seed.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "hsk2-seed.json"; sourceTree = "<group>"; };
 		51DB1DF42BE73FD4000C7ABE /* ClementineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClementineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineTests.swift; sourceTree = "<group>"; };
+		C10000000000000000000016 /* StudyDomainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyDomainTests.swift; sourceTree = "<group>"; };
+		C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSRSReviewSchedulerTests.swift; sourceTree = "<group>"; };
 		51DB1DFE2BE73FD4000C7ABE /* ClementineUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClementineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		51DB1E022BE73FD4000C7ABE /* ClementineUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineUITests.swift; sourceTree = "<group>"; };
 		51DB1E042BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -53,6 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10000000000000000000006 /* FSRS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +114,9 @@
 			children = (
 				51DB1DE32BE73FD3000C7ABE /* ClementineApp.swift */,
 				51DB1DE52BE73FD3000C7ABE /* ContentView.swift */,
+				C10000000000000000000021 /* Models */,
+				C10000000000000000000022 /* Services */,
+				C10000000000000000000023 /* Resources */,
 				51DB1DE92BE73FD4000C7ABE /* Assets.xcassets */,
 				51DB1DEB2BE73FD4000C7ABE /* Clementine.entitlements */,
 				51DB1DEF2BE73FD4000C7ABE /* Info.plist */,
@@ -114,10 +133,38 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		C10000000000000000000021 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000011 /* StudyDomain.swift */,
+				C10000000000000000000012 /* PersistenceModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000022 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000013 /* SeedDeck.swift */,
+				C10000000000000000000014 /* FSRSReviewScheduler.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000023 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000015 /* hsk2-seed.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		51DB1DF72BE73FD4000C7ABE /* ClementineTests */ = {
 			isa = PBXGroup;
 			children = (
 				51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */,
+				C10000000000000000000016 /* StudyDomainTests.swift */,
+				C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */,
 			);
 			path = ClementineTests;
 			sourceTree = "<group>";
@@ -147,6 +194,9 @@
 			dependencies = (
 			);
 			name = Clementine;
+			packageProductDependencies = (
+				C10000000000000000000031 /* FSRS */,
+			);
 			productName = Clementine;
 			productReference = 51DB1DE02BE73FD3000C7ABE /* Clementine.app */;
 			productType = "com.apple.product-type.application";
@@ -219,6 +269,9 @@
 				Base,
 			);
 			mainGroup = 51DB1DD72BE73FD3000C7ABE;
+			packageReferences = (
+				C10000000000000000000030 /* XCRemoteSwiftPackageReference "swift-fsrs" */,
+			);
 			productRefGroup = 51DB1DE12BE73FD3000C7ABE /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -235,6 +288,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10000000000000000000005 /* hsk2-seed.json in Resources */,
 				51DB1DEE2BE73FD4000C7ABE /* Preview Assets.xcassets in Resources */,
 				51DB1DEA2BE73FD4000C7ABE /* Assets.xcassets in Resources */,
 			);
@@ -262,6 +316,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				51DB1DE62BE73FD3000C7ABE /* ContentView.swift in Sources */,
+				C10000000000000000000001 /* StudyDomain.swift in Sources */,
+				C10000000000000000000002 /* PersistenceModels.swift in Sources */,
+				C10000000000000000000003 /* SeedDeck.swift in Sources */,
+				C10000000000000000000004 /* FSRSReviewScheduler.swift in Sources */,
 				51DB1DE42BE73FD3000C7ABE /* ClementineApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -271,6 +329,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				51DB1DF92BE73FD4000C7ABE /* ClementineTests.swift in Sources */,
+				C10000000000000000000007 /* StudyDomainTests.swift in Sources */,
+				C10000000000000000000008 /* FSRSReviewSchedulerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,6 +357,25 @@
 			targetProxy = 51DB1DFF2BE73FD4000C7ABE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C10000000000000000000030 /* XCRemoteSwiftPackageReference "swift-fsrs" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/open-spaced-repetition/swift-fsrs.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C10000000000000000000031 /* FSRS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C10000000000000000000030 /* XCRemoteSwiftPackageReference "swift-fsrs" */;
+			productName = FSRS;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		51DB1E062BE73FD4000C7ABE /* Debug */ = {

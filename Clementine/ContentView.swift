@@ -96,22 +96,6 @@ private struct SettingsPlaceholderView: View {
     }
 }
 
-private enum LearningPace: String, CaseIterable, Identifiable {
-    case low
-    case balanced
-    case high
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .low: "Low"
-        case .balanced: "Balanced"
-        case .high: "High"
-        }
-    }
-}
-
 private enum ClementineTheme {
     static var background: some ShapeStyle {
         LinearGradient(
