@@ -30,7 +30,7 @@ struct ContentView: View {
                     speak: speak,
                     chooseAnswer: chooseAnswer,
                     gradeRecall: gradeRecall,
-                    continueSession: moveToNextCard
+                    continueSession: continuePastNaturalStop
                 )
             }
             .tabItem { Label("Study", systemImage: "character.book.closed") }
@@ -121,7 +121,7 @@ struct ContentView: View {
         try? modelContext.save()
     }
 
-    private func moveToNextCard() {
+    private func moveToNextCard(forceNewCards: Bool = false) {
         let now = Date()
         let candidates = cards
             .filter { !$0.isSuspended }
@@ -138,7 +138,8 @@ struct ContentView: View {
             from: candidates,
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
-            now: now
+            now: now,
+            forceNewCards: forceNewCards
         )
 
         activeCardKey = decision.orderedCards.first.flatMap { candidate in
@@ -147,6 +148,10 @@ struct ContentView: View {
         selectedChoice = nil
         isAnswerRevealed = false
         responseStartedAt = now
+    }
+
+    private func continuePastNaturalStop() {
+        moveToNextCard(forceNewCards: true)
     }
 
     private func recentLapses(for cardKey: String) -> Int {

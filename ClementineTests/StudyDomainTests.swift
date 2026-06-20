@@ -88,7 +88,46 @@ final class StudyDomainTests: XCTestCase {
         )
         XCTAssertEqual(
             AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .high, recentAccuracy: 0.9, now: now).orderedCards.count,
-            9
+            12
+        )
+    }
+
+    func testHighPaceToleratesLowerAccuracyThanBalanced() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCards = (0..<6).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        XCTAssertTrue(
+            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .balanced, recentAccuracy: 0.65, now: now).orderedCards.isEmpty
+        )
+        XCTAssertEqual(
+            AdaptiveSessionPolicy.chooseCards(from: newCards, pace: .high, recentAccuracy: 0.65, now: now).orderedCards.count,
+            6
+        )
+    }
+
+    func testForcedContinueIntroducesNewCardsDespiteLowAccuracy() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCard = SessionCardCandidate(id: UUID(), dueAt: now, isNew: true, recentLapses: 0)
+
+        XCTAssertTrue(
+            AdaptiveSessionPolicy.chooseCards(from: [newCard], pace: .low, recentAccuracy: 0.2, now: now).orderedCards.isEmpty
+        )
+        XCTAssertEqual(
+            AdaptiveSessionPolicy.chooseCards(
+                from: [newCard],
+                pace: .low,
+                recentAccuracy: 0.2,
+                now: now,
+                forceNewCards: true
+            ).orderedCards,
+            [newCard]
         )
     }
 }

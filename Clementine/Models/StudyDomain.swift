@@ -35,7 +35,15 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .low: 2
         case .balanced: 5
-        case .high: 9
+        case .high: 18
+        }
+    }
+
+    var minimumAccuracyForNewCards: Double {
+        switch self {
+        case .low: 0.82
+        case .balanced: 0.72
+        case .high: 0.60
         }
     }
 }
@@ -90,7 +98,8 @@ enum AdaptiveSessionPolicy {
         from candidates: [SessionCardCandidate],
         pace: LearningPace,
         recentAccuracy: Double,
-        now: Date
+        now: Date,
+        forceNewCards: Bool = false
     ) -> SessionDecision {
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
@@ -104,7 +113,8 @@ enum AdaptiveSessionPolicy {
         let newAllowance = newCardAllowance(
             pace: pace,
             dueReviewCount: dueReviews.count,
-            recentAccuracy: recentAccuracy
+            recentAccuracy: recentAccuracy,
+            forceNewCards: forceNewCards
         )
 
         let newCards = candidates
@@ -122,11 +132,15 @@ enum AdaptiveSessionPolicy {
     private static func newCardAllowance(
         pace: LearningPace,
         dueReviewCount: Int,
-        recentAccuracy: Double
+        recentAccuracy: Double,
+        forceNewCards: Bool
     ) -> Int {
-        guard recentAccuracy >= 0.72 else { return 0 }
-
         let pressurePenalty = dueReviewCount >= 12 ? 2 : dueReviewCount >= 6 ? 1 : 0
+        if forceNewCards {
+            return max(1, pace.newCardLimit - pressurePenalty)
+        }
+
+        guard recentAccuracy >= pace.minimumAccuracyForNewCards else { return 0 }
         return max(0, pace.newCardLimit - pressurePenalty)
     }
 }
