@@ -15,11 +15,13 @@
 		C10000000000000000000002 /* PersistenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000012 /* PersistenceModels.swift */; };
 		C10000000000000000000003 /* SeedDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000013 /* SeedDeck.swift */; };
 		C10000000000000000000004 /* FSRSReviewScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000014 /* FSRSReviewScheduler.swift */; };
+		C10000000000000000000009 /* ClementineModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000018 /* ClementineModelContainer.swift */; };
 		C10000000000000000000005 /* hsk2-seed.json in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000015 /* hsk2-seed.json */; };
 		C10000000000000000000006 /* FSRS in Frameworks */ = {isa = PBXBuildFile; productRef = C10000000000000000000031 /* FSRS */; };
 		51DB1DF92BE73FD4000C7ABE /* ClementineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */; };
 		C10000000000000000000007 /* StudyDomainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000016 /* StudyDomainTests.swift */; };
 		C10000000000000000000008 /* FSRSReviewSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */; };
+		C1000000000000000000000A /* SeedImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000019 /* SeedImporterTests.swift */; };
 		51DB1E032BE73FD4000C7ABE /* ClementineUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1E022BE73FD4000C7ABE /* ClementineUITests.swift */; };
 		51DB1E052BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1E042BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
@@ -53,11 +55,13 @@
 		C10000000000000000000012 /* PersistenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceModels.swift; sourceTree = "<group>"; };
 		C10000000000000000000013 /* SeedDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedDeck.swift; sourceTree = "<group>"; };
 		C10000000000000000000014 /* FSRSReviewScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSRSReviewScheduler.swift; sourceTree = "<group>"; };
+		C10000000000000000000018 /* ClementineModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineModelContainer.swift; sourceTree = "<group>"; };
 		C10000000000000000000015 /* hsk2-seed.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "hsk2-seed.json"; sourceTree = "<group>"; };
 		51DB1DF42BE73FD4000C7ABE /* ClementineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClementineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineTests.swift; sourceTree = "<group>"; };
 		C10000000000000000000016 /* StudyDomainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyDomainTests.swift; sourceTree = "<group>"; };
 		C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSRSReviewSchedulerTests.swift; sourceTree = "<group>"; };
+		C10000000000000000000019 /* SeedImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedImporterTests.swift; sourceTree = "<group>"; };
 		51DB1DFE2BE73FD4000C7ABE /* ClementineUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClementineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		51DB1E022BE73FD4000C7ABE /* ClementineUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineUITests.swift; sourceTree = "<group>"; };
 		51DB1E042BE73FD4000C7ABE /* ClementineUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClementineUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -147,6 +151,7 @@
 			children = (
 				C10000000000000000000013 /* SeedDeck.swift */,
 				C10000000000000000000014 /* FSRSReviewScheduler.swift */,
+				C10000000000000000000018 /* ClementineModelContainer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -165,6 +170,7 @@
 				51DB1DF82BE73FD4000C7ABE /* ClementineTests.swift */,
 				C10000000000000000000016 /* StudyDomainTests.swift */,
 				C10000000000000000000017 /* FSRSReviewSchedulerTests.swift */,
+				C10000000000000000000019 /* SeedImporterTests.swift */,
 			);
 			path = ClementineTests;
 			sourceTree = "<group>";
@@ -320,6 +326,7 @@
 				C10000000000000000000002 /* PersistenceModels.swift in Sources */,
 				C10000000000000000000003 /* SeedDeck.swift in Sources */,
 				C10000000000000000000004 /* FSRSReviewScheduler.swift in Sources */,
+				C10000000000000000000009 /* ClementineModelContainer.swift in Sources */,
 				51DB1DE42BE73FD3000C7ABE /* ClementineApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -331,6 +338,7 @@
 				51DB1DF92BE73FD4000C7ABE /* ClementineTests.swift in Sources */,
 				C10000000000000000000007 /* StudyDomainTests.swift in Sources */,
 				C10000000000000000000008 /* FSRSReviewSchedulerTests.swift in Sources */,
+				C1000000000000000000000A /* SeedImporterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

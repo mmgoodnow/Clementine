@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class VocabularyNote {
-    @Attribute(.unique) var sourceID: String = ""
+    var sourceID: String = ""
     var id: UUID = UUID()
     var deckID: String = ""
     var hanzi: String = ""
@@ -36,7 +36,7 @@ final class VocabularyNote {
 
 @Model
 final class StudyCard {
-    @Attribute(.unique) var cardKey: String = ""
+    var cardKey: String = ""
     var id: UUID = UUID()
     var noteSourceID: String = ""
     var kindRaw: String = CardKind.hanziToMeaning.rawValue
@@ -100,7 +100,7 @@ final class ReviewEvent {
 
 @Model
 final class UserSettings {
-    @Attribute(.unique) var singletonID: String = "default"
+    var singletonID: String = "default"
     var learningPaceRaw: String = LearningPace.balanced.rawValue
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
@@ -120,7 +120,7 @@ final class UserSettings {
 
 @Model
 final class SeedInstall {
-    @Attribute(.unique) var deckID: String = ""
+    var deckID: String = ""
     var version: Int = 0
     var installedAt: Date = Date()
 
