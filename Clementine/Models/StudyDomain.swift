@@ -54,6 +54,16 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         case .high: 0.88...0.95
         }
     }
+
+    func calibrationNewCardFloor(reviewedCardCount: Int) -> Int {
+        guard self == .high else { return 0 }
+        return switch reviewedCardCount {
+        case 0..<60: 72
+        case 60..<120: 48
+        case 120..<180: 30
+        default: 0
+        }
+    }
 }
 
 enum ReviewGrade: String, Codable, CaseIterable {
@@ -112,6 +122,7 @@ enum AdaptiveSessionPolicy {
         forceNewCards: Bool = false
     ) -> SessionDecision {
         let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
+        let reviewedCardCount = candidates.filter { !$0.isNew }.count
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
             .sorted { lhs, rhs in
@@ -128,6 +139,7 @@ enum AdaptiveSessionPolicy {
                 newCardAllowance(
                     pace: pace,
                     forecastedReviewLoad: forecastedReviewLoad,
+                    reviewedCardCount: reviewedCardCount,
                     recentAccuracy: recentAccuracy,
                     forceNewCards: forceNewCards
                 )
@@ -178,6 +190,7 @@ enum AdaptiveSessionPolicy {
     private static func newCardAllowance(
         pace: LearningPace,
         forecastedReviewLoad: Int,
+        reviewedCardCount: Int,
         recentAccuracy: Double,
         forceNewCards: Bool
     ) -> Int {
@@ -196,8 +209,13 @@ enum AdaptiveSessionPolicy {
             recentAccuracy: recentAccuracy
         ) / normalizedAccuracy
         let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
+        let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
+        let calibrationFloor = min(
+            availableLoad,
+            pace.calibrationNewCardFloor(reviewedCardCount: reviewedCardCount)
+        )
 
-        return max(forceNewCards ? 1 : 0, Int(floor(Double(availableLoad) / expectedNewCardLoad)))
+        return max(forceNewCards ? 1 : 0, calibrationFloor, workloadAllowance)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
