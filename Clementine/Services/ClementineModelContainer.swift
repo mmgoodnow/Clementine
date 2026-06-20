@@ -1,5 +1,7 @@
 import SwiftData
+#if os(macOS)
 import Security
+#endif
 
 enum ClementineModelContainer {
     static let iCloudContainerIdentifier = "iCloud.com.mmgoodnow.Clementine"
@@ -31,6 +33,9 @@ enum ClementineModelContainer {
     }
 
     private static var hasCloudKitEntitlement: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #elseif os(macOS)
         guard let task = SecTaskCreateFromSelf(nil),
               let value = SecTaskCopyValueForEntitlement(
                 task,
@@ -41,5 +46,8 @@ enum ClementineModelContainer {
         }
 
         return value.contains("CloudKit")
+        #else
+        return true
+        #endif
     }
 }
