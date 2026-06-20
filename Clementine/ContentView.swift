@@ -485,10 +485,10 @@ private struct MultipleChoiceButtonLabel: View {
     }
 
     private var feedbackBackground: Color {
-        guard isAnswered else { return Color.clear }
+        guard isAnswered else { return Color.primary.opacity(0.035) }
         if isCorrect { return Color.green.opacity(0.08) }
         if isSelected { return Color.red.opacity(0.07) }
-        return Color.clear
+        return Color.primary.opacity(0.025)
     }
 
     private var optionForeground: Color {
