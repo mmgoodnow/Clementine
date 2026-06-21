@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" version="1.1">
+  <title>Clementine segment lines</title>
+  <g fill="none" stroke="#9e2d0f" stroke-width="24" stroke-linecap="round" opacity="0.34">
+    <path d="M512 338c-43 78-60 167-54 266 5 68 23 125 54 172"/>
+    <path d="M512 338c43 78 60 167 54 266-5 68-23 125-54 172"/>
+    <path d="M338 484c57 27 115 40 174 40s117-13 174-40"/>
+    <path d="M315 626c65 31 131 46 197 46s132-15 197-46"/>
+  </g>
+</svg>

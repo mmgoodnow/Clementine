@@ -11,6 +11,7 @@
 		51DB1DE62BE73FD3000C7ABE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DB1DE52BE73FD3000C7ABE /* ContentView.swift */; };
 		51DB1DEA2BE73FD4000C7ABE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51DB1DE92BE73FD4000C7ABE /* Assets.xcassets */; };
 		51DB1DEE2BE73FD4000C7ABE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51DB1DED2BE73FD4000C7ABE /* Preview Assets.xcassets */; };
+		C1C0A0000000000000000002 /* Clementine.icon in Resources */ = {isa = PBXBuildFile; fileRef = C1C0A0000000000000000001 /* Clementine.icon */; };
 		C10000000000000000000001 /* StudyDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000011 /* StudyDomain.swift */; };
 		C10000000000000000000002 /* PersistenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000012 /* PersistenceModels.swift */; };
 		C10000000000000000000003 /* SeedDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000013 /* SeedDeck.swift */; };
@@ -51,6 +52,7 @@
 		51DB1DEB2BE73FD4000C7ABE /* Clementine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Clementine.entitlements; sourceTree = "<group>"; };
 		51DB1DED2BE73FD4000C7ABE /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		51DB1DEF2BE73FD4000C7ABE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C1C0A0000000000000000001 /* Clementine.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Clementine.icon; sourceTree = "<group>"; };
 		C10000000000000000000011 /* StudyDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyDomain.swift; sourceTree = "<group>"; };
 		C10000000000000000000012 /* PersistenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceModels.swift; sourceTree = "<group>"; };
 		C10000000000000000000013 /* SeedDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedDeck.swift; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 		51DB1DD72BE73FD3000C7ABE = {
 			isa = PBXGroup;
 			children = (
+				C1C0A0000000000000000001 /* Clementine.icon */,
 				51DB1DE22BE73FD3000C7ABE /* Clementine */,
 				51DB1DF72BE73FD4000C7ABE /* ClementineTests */,
 				51DB1E012BE73FD4000C7ABE /* ClementineUITests */,
@@ -295,6 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C10000000000000000000005 /* hsk2-seed.json in Resources */,
+				C1C0A0000000000000000002 /* Clementine.icon in Resources */,
 				51DB1DEE2BE73FD4000C7ABE /* Preview Assets.xcassets in Resources */,
 				51DB1DEA2BE73FD4000C7ABE /* Assets.xcassets in Resources */,
 			);
@@ -503,7 +507,7 @@
 		51DB1E092BE73FD4000C7ABE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Clementine;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Clementine/Clementine.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -542,7 +546,7 @@
 		51DB1E0A2BE73FD4000C7ABE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Clementine;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Clementine/Clementine.entitlements;
 				CODE_SIGN_STYLE = Automatic;

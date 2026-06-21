@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" version="1.1">
+  <title>Clementine soft highlight</title>
+  <path fill="#ffa738" d="M359 365c-58 42-91 107-91 181 0 38 31 54 58 32 48-38 99-83 164-101 31-9 38-51 10-67-38-22-92-19-141-45z" opacity="0.88"/>
+  <path fill="#ffa738" d="M620 322c78 31 132 94 151 178 8 35 48 43 62 10 19-44-7-117-64-169-47-42-108-64-149-19z" opacity="0.52"/>
+</svg>

@@ -1,0 +1,58 @@
+{
+  "fill" : "system-light",
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "srgb:0.95686,0.36078,0.10588,1.00000"
+          },
+          "image-name" : "fruit-body.svg",
+          "name" : "Clementine Body"
+        },
+        {
+          "fill" : {
+            "solid" : "srgb:1.00000,0.65490,0.21961,1.00000"
+          },
+          "image-name" : "fruit-highlight.svg",
+          "name" : "Soft Highlight"
+        },
+        {
+          "fill" : {
+            "solid" : "srgb:0.61961,0.17647,0.05882,1.00000"
+          },
+          "image-name" : "segment-lines.svg",
+          "name" : "Segment Lines"
+        },
+        {
+          "fill" : {
+            "solid" : "srgb:0.11765,0.43922,0.25882,1.00000"
+          },
+          "image-name" : "leaf.svg",
+          "name" : "Leaf"
+        },
+        {
+          "fill" : {
+            "solid" : "srgb:0.35686,0.19216,0.08627,1.00000"
+          },
+          "image-name" : "stem.svg",
+          "name" : "Stem"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.38
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.24
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
