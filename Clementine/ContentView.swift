@@ -334,8 +334,6 @@ private struct StudyPrompt {
 }
 
 private struct StudyView: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var state: StudyScreenState
     @Binding var selectedChoice: String?
     @Binding var isAnswerRevealed: Bool
@@ -347,10 +345,6 @@ private struct StudyView: View {
 
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(ClementineTheme.background(for: colorScheme))
-                .ignoresSafeArea()
-
             switch state {
             case .empty:
                 EmptyStudyView(seedError: seedError)
@@ -952,30 +946,6 @@ private struct SettingsViewContent: View {
             }
         }
         .navigationTitle("Settings")
-    }
-}
-
-private enum ClementineTheme {
-    static func background(for colorScheme: ColorScheme) -> LinearGradient {
-        let colors: [Color]
-        switch colorScheme {
-        case .dark:
-            colors = [
-                Color(red: 0.07, green: 0.09, blue: 0.08),
-                Color(red: 0.10, green: 0.13, blue: 0.11)
-            ]
-        default:
-            colors = [
-                Color(red: 0.98, green: 0.97, blue: 0.94),
-                Color(red: 0.93, green: 0.96, blue: 0.95)
-            ]
-        }
-
-        return LinearGradient(
-            colors: colors,
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
 }
 
