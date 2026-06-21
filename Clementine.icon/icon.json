@@ -1,5 +1,7 @@
 {
-  "fill" : "system-light",
+  "fill" : {
+    "solid" : "srgb:1.00000,0.56078,0.18039,0.16000"
+  },
   "groups" : [
     {
       "layers" : [
