@@ -60,6 +60,64 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertFalse(decision.shouldStopNaturally)
     }
 
+    func testNextCandidateAvoidsRecentlyShownCardWhenAlternativeExists() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let repeated = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: false,
+            recentLapses: 1,
+            noteSourceID: "word-1",
+            kind: .hanziToMeaning
+        )
+        let alternative = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: false,
+            recentLapses: 0,
+            noteSourceID: "word-2",
+            kind: .hanziToPinyin
+        )
+
+        XCTAssertEqual(
+            AdaptiveSessionPolicy.nextCandidate(
+                from: [repeated, alternative],
+                recentCardIDs: [repeated.id],
+                recentNoteSourceIDs: []
+            ),
+            alternative
+        )
+    }
+
+    func testNextCandidateAvoidsRecentlyShownVocabularyWhenAlternativeExists() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let sibling = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: true,
+            recentLapses: 0,
+            noteSourceID: "word-1",
+            kind: .hanziToPinyin
+        )
+        let alternative = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: true,
+            recentLapses: 0,
+            noteSourceID: "word-2",
+            kind: .hanziToMeaning
+        )
+
+        XCTAssertEqual(
+            AdaptiveSessionPolicy.nextCandidate(
+                from: [sibling, alternative],
+                recentCardIDs: [],
+                recentNoteSourceIDs: ["word-1"]
+            ),
+            alternative
+        )
+    }
+
     func testAdaptivePolicyStopsWhenNothingUsefulIsAvailable() {
         let now = Date(timeIntervalSince1970: 1_000)
         let future = SessionCardCandidate(id: UUID(), dueAt: now.addingTimeInterval(60), isNew: false, recentLapses: 0)

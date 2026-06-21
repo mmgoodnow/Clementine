@@ -108,3 +108,62 @@ enum SeedImporter {
         }
     }
 }
+
+@MainActor
+enum SeedDeduplicator {
+    @discardableResult
+    static func removeDuplicateSeedRecords(context: ModelContext) throws -> Int {
+        var removedCount = 0
+        removedCount += try removeDuplicateNotes(context: context)
+        removedCount += try removeDuplicateCards(context: context)
+
+        if removedCount > 0 {
+            try context.save()
+        }
+        return removedCount
+    }
+
+    private static func removeDuplicateNotes(context: ModelContext) throws -> Int {
+        let notes = try context.fetch(FetchDescriptor<VocabularyNote>())
+        let grouped = Dictionary(grouping: notes.filter { !$0.sourceID.isEmpty }, by: \.sourceID)
+        var removedCount = 0
+
+        for duplicates in grouped.values where duplicates.count > 1 {
+            let ordered = duplicates.sorted {
+                if $0.updatedAt != $1.updatedAt { return $0.updatedAt > $1.updatedAt }
+                return $0.createdAt < $1.createdAt
+            }
+            for duplicate in ordered.dropFirst() {
+                context.delete(duplicate)
+                removedCount += 1
+            }
+        }
+
+        return removedCount
+    }
+
+    private static func removeDuplicateCards(context: ModelContext) throws -> Int {
+        let cards = try context.fetch(FetchDescriptor<StudyCard>())
+        let grouped = Dictionary(grouping: cards.filter { !$0.cardKey.isEmpty }, by: \.cardKey)
+        var removedCount = 0
+
+        for duplicates in grouped.values where duplicates.count > 1 {
+            let ordered = duplicates.sorted(by: preferredCard(_:_:))
+            for duplicate in ordered.dropFirst() {
+                context.delete(duplicate)
+                removedCount += 1
+            }
+        }
+
+        return removedCount
+    }
+
+    private static func preferredCard(_ lhs: StudyCard, _ rhs: StudyCard) -> Bool {
+        let lhsHasProgress = lhs.fsrsCardData != nil
+        let rhsHasProgress = rhs.fsrsCardData != nil
+        if lhsHasProgress != rhsHasProgress { return lhsHasProgress }
+        if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }
+        if lhs.dueAt != rhs.dueAt { return lhs.dueAt < rhs.dueAt }
+        return lhs.id.uuidString < rhs.id.uuidString
+    }
+}

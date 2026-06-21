@@ -280,6 +280,22 @@ enum AdaptiveSessionPolicy {
         }.count
     }
 
+    static func nextCandidate(
+        from orderedCards: [SessionCardCandidate],
+        recentCardIDs: [UUID],
+        recentNoteSourceIDs: [String]
+    ) -> SessionCardCandidate? {
+        let recentCardIDs = Set(recentCardIDs)
+        let recentNoteSourceIDs = Set(recentNoteSourceIDs.filter { !$0.isEmpty })
+
+        return orderedCards.first { candidate in
+            !recentCardIDs.contains(candidate.id) &&
+                (candidate.noteSourceID.isEmpty || !recentNoteSourceIDs.contains(candidate.noteSourceID))
+        } ?? orderedCards.first { candidate in
+            !recentCardIDs.contains(candidate.id)
+        } ?? orderedCards.first
+    }
+
     private static func newCardAllowance(
         pace: LearningPace,
         forecastedReviewLoad: Int,

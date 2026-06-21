@@ -18,6 +18,8 @@ struct ContentView: View {
     @State private var isAnswerRevealed = false
     @State private var responseStartedAt = Date()
     @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @State private var recentCardIDs: [UUID] = []
+    @State private var recentNoteSourceIDs: [String] = []
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -50,12 +52,17 @@ struct ContentView: View {
         }
         .task {
             ensureSettings()
+            deduplicateSyncedSeedData()
             moveToNextCard()
         }
         .onChange(of: cards.count) { _, _ in
+            deduplicateSyncedSeedData()
             if activeCard == nil {
                 moveToNextCard()
             }
+        }
+        .onChange(of: notes.count) { _, _ in
+            deduplicateSyncedSeedData()
         }
     }
 
@@ -133,6 +140,13 @@ struct ContentView: View {
         try? modelContext.save()
     }
 
+    private func deduplicateSyncedSeedData() {
+        let removedCount = (try? SeedDeduplicator.removeDuplicateSeedRecords(context: modelContext)) ?? 0
+        if removedCount > 0, activeCard == nil {
+            moveToNextCard()
+        }
+    }
+
     private func moveToNextCard(forceNewCards: Bool = false) {
         let now = Date()
         let candidates = sessionCandidates()
@@ -145,12 +159,30 @@ struct ContentView: View {
             forceNewCards: forceNewCards
         )
 
-        activeCardKey = decision.orderedCards.first.flatMap { candidate in
+        let selectedCandidate = AdaptiveSessionPolicy.nextCandidate(
+            from: decision.orderedCards,
+            recentCardIDs: Array(recentCardIDs.suffix(3)),
+            recentNoteSourceIDs: Array(recentNoteSourceIDs.suffix(2))
+        )
+
+        activeCardKey = selectedCandidate.flatMap { candidate in
             cards.first { $0.id == candidate.id }?.cardKey
+        }
+        if let selectedCandidate {
+            rememberShown(candidate: selectedCandidate)
         }
         selectedChoice = nil
         isAnswerRevealed = false
         responseStartedAt = now
+    }
+
+    private func rememberShown(candidate: SessionCardCandidate) {
+        recentCardIDs.append(candidate.id)
+        recentCardIDs = Array(recentCardIDs.suffix(6))
+        if !candidate.noteSourceID.isEmpty {
+            recentNoteSourceIDs.append(candidate.noteSourceID)
+            recentNoteSourceIDs = Array(recentNoteSourceIDs.suffix(4))
+        }
     }
 
     private func sessionCandidates() -> [SessionCardCandidate] {
