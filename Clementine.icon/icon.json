@@ -19,13 +19,6 @@
         },
         {
           "fill" : {
-            "solid" : "srgb:0.61961,0.17647,0.05882,1.00000"
-          },
-          "image-name" : "segment-lines.svg",
-          "name" : "Segment Lines"
-        },
-        {
-          "fill" : {
             "solid" : "srgb:1.00000,0.65490,0.21961,1.00000"
           },
           "image-name" : "fruit-highlight.svg",
