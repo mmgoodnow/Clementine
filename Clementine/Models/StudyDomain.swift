@@ -42,9 +42,9 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
 
     var reviewLoadBudget: Int {
         switch self {
-        case .low: 18
-        case .balanced: 42
-        case .high: 84
+        case .low: 210
+        case .balanced: 420
+        case .high: 840
         }
     }
 
@@ -64,29 +64,11 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    func calibrationNewCardFloor(reviewedCardCount: Int) -> Int {
-        guard self == .high else { return 0 }
-        return switch reviewedCardCount {
-        case 0..<60: 72
-        case 60..<120: 48
-        case 120..<180: 30
-        default: 0
-        }
-    }
-
     var forcedContinueNewCardBatch: Int {
         switch self {
         case .low: 3
         case .balanced: 9
         case .high: 18
-        }
-    }
-
-    var explorationNewCardBatch: Int {
-        switch self {
-        case .low: 2
-        case .balanced: 5
-        case .high: 10
         }
     }
 }
@@ -223,7 +205,6 @@ enum AdaptiveSessionPolicy {
         forceNewCards: Bool = false
     ) -> SessionDecision {
         let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
-        let reviewedCardCount = candidates.filter { !$0.isNew }.count
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
             .sorted { lhs, rhs in
@@ -240,8 +221,6 @@ enum AdaptiveSessionPolicy {
                 newCardAllowance(
                     pace: pace,
                     forecastedReviewLoad: forecastedReviewLoad,
-                    dueReviewCount: dueReviews.count,
-                    reviewedCardCount: reviewedCardCount,
                     recentAccuracy: recentAccuracy,
                     forceNewCards: forceNewCards
                 )
@@ -308,17 +287,12 @@ enum AdaptiveSessionPolicy {
     private static func newCardAllowance(
         pace: LearningPace,
         forecastedReviewLoad: Int,
-        dueReviewCount: Int,
-        reviewedCardCount: Int,
         recentAccuracy: Double,
         forceNewCards: Bool
     ) -> Int {
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
-        let explorationBatch = dueReviewCount == 0 && recentAccuracy >= 0.85
-            ? pace.explorationNewCardBatch
-            : 0
         let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
-        guard availableLoad > 0 else { return max(forcedBatch, explorationBatch) }
+        guard availableLoad > 0 else { return forcedBatch }
 
         let expectedRecallCost = 1.0
         let expectedForgetCost = 2.0
@@ -333,12 +307,8 @@ enum AdaptiveSessionPolicy {
         ) / normalizedAccuracy
         let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
         let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
-        let calibrationFloor = min(
-            availableLoad,
-            pace.calibrationNewCardFloor(reviewedCardCount: reviewedCardCount)
-        )
 
-        return max(forcedBatch, explorationBatch, calibrationFloor, workloadAllowance)
+        return max(forcedBatch, workloadAllowance)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
