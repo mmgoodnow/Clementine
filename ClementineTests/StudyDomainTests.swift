@@ -434,7 +434,7 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
-    func testForcedHighPaceContinueIntroducesBatchWhenForecastIsFull() {
+    func testHighPaceStillExploresAfterDueWorkIsClearWhenForecastIsFull() {
         let now = Date(timeIntervalSince1970: 1_000)
         let futureReviews = (0..<120).map { index in
             SessionCardCandidate(
@@ -453,13 +453,14 @@ final class StudyDomainTests: XCTestCase {
             )
         }
 
-        XCTAssertTrue(
+        XCTAssertEqual(
             AdaptiveSessionPolicy.chooseCards(
                 from: futureReviews + newCards,
                 pace: .high,
                 recentAccuracy: 0.9,
                 now: now
-            ).orderedCards.filter(\.isNew).isEmpty
+            ).orderedCards.filter(\.isNew).count,
+            LearningPace.high.explorationNewCardBatch
         )
 
         XCTAssertEqual(
@@ -472,6 +473,45 @@ final class StudyDomainTests: XCTestCase {
             ).orderedCards.filter(\.isNew).count,
             LearningPace.high.forcedContinueNewCardBatch
         )
+    }
+
+    func testFullForecastDoesNotExploreWhenDueReviewsRemain() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let dueReviews = (0..<4).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(-index - 1) * 60),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+        let futureReviews = (0..<120).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 3_600),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+        let newCards = (0..<40).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: dueReviews + futureReviews + newCards,
+            pace: .high,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(decision.orderedCards.filter(\.isNew).count, 0)
+        XCTAssertEqual(decision.orderedCards.count, dueReviews.count)
+        XCTAssertTrue(decision.orderedCards.allSatisfy { !$0.isNew && $0.dueAt <= now })
     }
 
     func testForcedContinuePrioritizesNewCardsOverDueReviews() {

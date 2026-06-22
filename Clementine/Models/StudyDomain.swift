@@ -81,6 +81,14 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         case .high: 18
         }
     }
+
+    var explorationNewCardBatch: Int {
+        switch self {
+        case .low: 2
+        case .balanced: 5
+        case .high: 10
+        }
+    }
 }
 
 enum ReviewGrade: String, Codable, CaseIterable {
@@ -232,6 +240,7 @@ enum AdaptiveSessionPolicy {
                 newCardAllowance(
                     pace: pace,
                     forecastedReviewLoad: forecastedReviewLoad,
+                    dueReviewCount: dueReviews.count,
                     reviewedCardCount: reviewedCardCount,
                     recentAccuracy: recentAccuracy,
                     forceNewCards: forceNewCards
@@ -299,13 +308,17 @@ enum AdaptiveSessionPolicy {
     private static func newCardAllowance(
         pace: LearningPace,
         forecastedReviewLoad: Int,
+        dueReviewCount: Int,
         reviewedCardCount: Int,
         recentAccuracy: Double,
         forceNewCards: Bool
     ) -> Int {
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
+        let explorationBatch = dueReviewCount == 0 && recentAccuracy >= 0.85
+            ? pace.explorationNewCardBatch
+            : 0
         let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
-        guard availableLoad > 0 else { return forcedBatch }
+        guard availableLoad > 0 else { return max(forcedBatch, explorationBatch) }
 
         let expectedRecallCost = 1.0
         let expectedForgetCost = 2.0
@@ -325,7 +338,7 @@ enum AdaptiveSessionPolicy {
             pace.calibrationNewCardFloor(reviewedCardCount: reviewedCardCount)
         )
 
-        return max(forcedBatch, calibrationFloor, workloadAllowance)
+        return max(forcedBatch, explorationBatch, calibrationFloor, workloadAllowance)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
