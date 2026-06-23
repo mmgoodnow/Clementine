@@ -473,8 +473,7 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
-                newCount: prompt.newCount,
-                kind: prompt.card.kind
+                newCount: prompt.newCount
             )
 
             Spacer(minLength: 8)
@@ -524,11 +523,10 @@ private struct StudyStatusBar: View {
     var servingNewCount: Int
     var servingReviewCount: Int
     var newCount: Int
-    var kind: CardKind
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen · \(kind.title)")
+            Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
             Spacer()
         }
         .font(.callout)
