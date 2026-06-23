@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
     @State private var servingCount = 0
+    @State private var isServingPassActive = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -78,6 +79,7 @@ struct ContentView: View {
                 ensureSettings()
                 settings?.learningPace = newValue
                 try? modelContext.save()
+                endServingPass()
                 moveToNextCard()
             }
         )
@@ -150,6 +152,16 @@ struct ContentView: View {
     }
 
     private func moveToNextCard(forceNewCards: Bool = false) {
+        if forceNewCards {
+            endServingPass()
+        } else if isServingPassActive, servingCount <= 0 {
+            endServingPass()
+            activeCardKey = nil
+            selectedChoice = nil
+            isAnswerRevealed = false
+            return
+        }
+
         let now = Date()
         let candidates = sessionCandidates()
 
@@ -170,7 +182,12 @@ struct ContentView: View {
         activeCardKey = selectedCandidate.flatMap { candidate in
             cards.first { $0.id == candidate.id }?.cardKey
         }
-        servingCount = decision.orderedCards.count
+        if selectedCandidate == nil {
+            endServingPass()
+        } else if !isServingPassActive {
+            servingCount = decision.orderedCards.count
+            isServingPassActive = true
+        }
         if let selectedCandidate {
             rememberShown(candidate: selectedCandidate)
         }
@@ -186,6 +203,11 @@ struct ContentView: View {
             recentNoteSourceIDs.append(candidate.noteSourceID)
             recentNoteSourceIDs = Array(recentNoteSourceIDs.suffix(4))
         }
+    }
+
+    private func endServingPass() {
+        servingCount = 0
+        isServingPassActive = false
     }
 
     private func sessionCandidates() -> [SessionCardCandidate] {
@@ -292,6 +314,7 @@ struct ContentView: View {
                 )
             )
             try modelContext.save()
+            servingCount = max(0, servingCount - 1)
             if advanceImmediately {
                 moveToNextCard()
             }
