@@ -308,9 +308,24 @@ struct ContentView: View {
     private func speak(_ note: VocabularyNote) {
         speechSynthesizer.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: note.hanzi)
-        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.82
+        utterance.voice = preferredMandarinVoice()
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.92
         speechSynthesizer.speak(utterance)
+    }
+
+    private func preferredMandarinVoice() -> AVSpeechSynthesisVoice? {
+        let voices = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == "zh-CN" }
+
+        return voices
+            .filter { !$0.identifier.contains(".eloquence.") }
+            .sorted { lhs, rhs in
+                if lhs.quality != rhs.quality {
+                    return lhs.quality.rawValue > rhs.quality.rawValue
+                }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+            .first ?? AVSpeechSynthesisVoice(language: "zh-CN")
     }
 }
 
