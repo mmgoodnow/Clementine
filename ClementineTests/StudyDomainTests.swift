@@ -173,6 +173,9 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(LearningPace.low.reviewLoadBudget, 210)
         XCTAssertEqual(LearningPace.balanced.reviewLoadBudget, 420)
         XCTAssertEqual(LearningPace.high.reviewLoadBudget, 840)
+        XCTAssertEqual(low, LearningPace.low.newCardsPerPassLimit)
+        XCTAssertEqual(balanced, LearningPace.balanced.newCardsPerPassLimit)
+        XCTAssertEqual(high, LearningPace.high.newCardsPerPassLimit)
         XCTAssertLessThan(low, balanced)
         XCTAssertLessThan(balanced, high)
     }
@@ -232,6 +235,14 @@ final class StudyDomainTests: XCTestCase {
 
     func testLowerAccuracyReducesButDoesNotZeroNewCardAllowance() {
         let now = Date(timeIntervalSince1970: 1_000)
+        let futureReviews = (0..<350).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 60),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
         let newCards = (0..<700).map { index in
             SessionCardCandidate(
                 id: UUID(),
@@ -242,13 +253,13 @@ final class StudyDomainTests: XCTestCase {
         }
 
         let highAccuracy = AdaptiveSessionPolicy.chooseCards(
-            from: newCards,
+            from: futureReviews + newCards,
             pace: .balanced,
             recentAccuracy: 0.9,
             now: now
         ).orderedCards.count
         let lowAccuracy = AdaptiveSessionPolicy.chooseCards(
-            from: newCards,
+            from: futureReviews + newCards,
             pace: .balanced,
             recentAccuracy: 0.45,
             now: now
@@ -317,7 +328,7 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
-    func testHighPaceAllowsLargerInitialBatchThroughWorkloadBudget() {
+    func testHighPaceCapsInitialBatchToNewCardsPerPassLimit() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = (0..<700).map { index in
             SessionCardCandidate(
@@ -341,7 +352,7 @@ final class StudyDomainTests: XCTestCase {
         ).orderedCards.filter(\.isNew).count
 
         XCTAssertGreaterThan(high, low)
-        XCTAssertGreaterThanOrEqual(high, 50)
+        XCTAssertEqual(high, LearningPace.high.newCardsPerPassLimit)
     }
 
     func testForecastedReviewLoadReducesNewCards() {

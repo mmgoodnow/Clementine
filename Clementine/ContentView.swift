@@ -23,6 +23,8 @@ struct ContentView: View {
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
     @State private var servingCount = 0
+    @State private var servingNewCount = 0
+    @State private var servingReviewCount = 0
     @State private var isServingPassActive = false
 
     var body: some View {
@@ -128,7 +130,6 @@ struct ContentView: View {
             return .complete
         }
 
-        let dueCount = cards.filter { !$0.isSuspended && $0.fsrsCardData != nil && $0.dueAt <= Date() }.count
         let newCount = cards.filter { !$0.isSuspended && $0.fsrsCardData == nil }.count
 
         return .card(
@@ -138,7 +139,8 @@ struct ContentView: View {
                 correctAnswer: correctAnswer(for: activeCard, note: activeNote),
                 choices: choices(for: activeCard, note: activeNote),
                 servingCount: servingCount,
-                dueCount: dueCount,
+                servingNewCount: servingNewCount,
+                servingReviewCount: servingReviewCount,
                 newCount: newCount
             )
         )
@@ -191,8 +193,7 @@ struct ContentView: View {
         if selectedCandidate == nil {
             endServingPass()
         } else if !isServingPassActive {
-            servingCount = decision.orderedCards.count
-            isServingPassActive = true
+            startServingPass(with: decision.orderedCards)
         }
         if let selectedCandidate {
             rememberShown(candidate: selectedCandidate)
@@ -214,7 +215,16 @@ struct ContentView: View {
 
     private func endServingPass() {
         servingCount = 0
+        servingNewCount = 0
+        servingReviewCount = 0
         isServingPassActive = false
+    }
+
+    private func startServingPass(with cards: [SessionCardCandidate]) {
+        servingCount = cards.count
+        servingNewCount = cards.filter(\.isNew).count
+        servingReviewCount = cards.count - servingNewCount
+        isServingPassActive = true
     }
 
     private func sessionCandidates() -> [SessionCardCandidate] {
@@ -300,6 +310,7 @@ struct ContentView: View {
     ) {
         do {
             let now = Date()
+            let wasServingNewCard = card.fsrsCardData == nil
             let review = try FSRSReviewScheduler.review(
                 cardData: card.fsrsCardData,
                 grade: grade,
@@ -322,6 +333,11 @@ struct ContentView: View {
             )
             try modelContext.save()
             servingCount = max(0, servingCount - 1)
+            if wasServingNewCard {
+                servingNewCount = max(0, servingNewCount - 1)
+            } else {
+                servingReviewCount = max(0, servingReviewCount - 1)
+            }
             if advanceImmediately {
                 moveToNextCard()
             }
@@ -406,7 +422,8 @@ private struct StudyPrompt {
     var correctAnswer: String
     var choices: [String]
     var servingCount: Int
-    var dueCount: Int
+    var servingNewCount: Int
+    var servingReviewCount: Int
     var newCount: Int
 }
 
@@ -454,7 +471,8 @@ private struct StudyCardView: View {
         VStack(spacing: 22) {
             StudyStatusBar(
                 servingCount: prompt.servingCount,
-                dueCount: prompt.dueCount,
+                servingNewCount: prompt.servingNewCount,
+                servingReviewCount: prompt.servingReviewCount,
                 newCount: prompt.newCount,
                 kind: prompt.card.kind
             )
@@ -503,13 +521,14 @@ private struct StudyCardView: View {
 
 private struct StudyStatusBar: View {
     var servingCount: Int
-    var dueCount: Int
+    var servingNewCount: Int
+    var servingReviewCount: Int
     var newCount: Int
     var kind: CardKind
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(servingCount) serving · \(dueCount) due · \(newCount) unseen · \(kind.title)")
+            Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen · \(kind.title)")
             Spacer()
         }
         .font(.callout)

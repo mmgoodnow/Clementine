@@ -48,6 +48,14 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var newCardsPerPassLimit: Int {
+        switch self {
+        case .low: 12
+        case .balanced: 24
+        case .high: 36
+        }
+    }
+
     var baselineRetention: Double {
         switch self {
         case .low: 0.88
@@ -292,7 +300,7 @@ enum AdaptiveSessionPolicy {
     ) -> Int {
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
         let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
-        guard availableLoad > 0 else { return forcedBatch }
+        guard availableLoad > 0 else { return min(forcedBatch, pace.newCardsPerPassLimit) }
 
         let expectedRecallCost = 1.0
         let expectedForgetCost = 2.0
@@ -308,7 +316,7 @@ enum AdaptiveSessionPolicy {
         let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
         let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
 
-        return max(forcedBatch, workloadAllowance)
+        return min(max(forcedBatch, workloadAllowance), pace.newCardsPerPassLimit)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
