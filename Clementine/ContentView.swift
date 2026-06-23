@@ -443,7 +443,7 @@ private struct StudyStatusBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(dueCount) due · \(newCount) new · \(kind.title)")
+            Text("\(dueCount) due · \(newCount) unseen · \(kind.title)")
             Spacer()
         }
         .font(.callout)
