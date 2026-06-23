@@ -18,6 +18,8 @@ struct ContentView: View {
     @State private var isAnswerRevealed = false
     @State private var responseStartedAt = Date()
     @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @State private var preferredSpeechVoice: AVSpeechSynthesisVoice?
+    @State private var hasWarmedSpeechSynthesizer = false
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
     @State private var servingCount = 0
@@ -56,6 +58,7 @@ struct ContentView: View {
             ensureSettings()
             deduplicateSyncedSeedData()
             moveToNextCard()
+            prepareSpeech(for: activeNote)
         }
         .onChange(of: cards.count) { _, _ in
             deduplicateSyncedSeedData()
@@ -65,6 +68,9 @@ struct ContentView: View {
         }
         .onChange(of: notes.count) { _, _ in
             deduplicateSyncedSeedData()
+        }
+        .onChange(of: activeCardKey) { _, _ in
+            prepareSpeech(for: activeNote)
         }
     }
 
@@ -194,6 +200,7 @@ struct ContentView: View {
         selectedChoice = nil
         isAnswerRevealed = false
         responseStartedAt = now
+        prepareSpeech(for: activeNote)
     }
 
     private func rememberShown(candidate: SessionCardCandidate) {
@@ -272,7 +279,7 @@ struct ContentView: View {
             responseSeconds: elapsed,
             advanceImmediately: false
         )
-        scheduleMultipleChoiceAdvance(cardKey: activeCard.cardKey, selectedAnswer: answer)
+        scheduleMultipleChoiceAdvance(cardKey: activeCard.cardKey, selectedAnswer: answer, wasCorrect: correct)
     }
 
     private func gradeRecall(remembered: Bool, confident: Bool) {
@@ -323,9 +330,9 @@ struct ContentView: View {
         }
     }
 
-    private func scheduleMultipleChoiceAdvance(cardKey: String, selectedAnswer: String) {
+    private func scheduleMultipleChoiceAdvance(cardKey: String, selectedAnswer: String, wasCorrect: Bool) {
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.1))
+            try? await Task.sleep(for: .seconds(wasCorrect ? 0.55 : 0.8))
             guard activeCardKey == cardKey, selectedChoice == selectedAnswer else { return }
             moveToNextCard()
         }
@@ -333,10 +340,36 @@ struct ContentView: View {
 
     private func speak(_ note: VocabularyNote) {
         speechSynthesizer.stopSpeaking(at: .immediate)
-        let utterance = AVSpeechUtterance(string: note.hanzi)
-        utterance.voice = preferredMandarinVoice()
+        speechSynthesizer.speak(mandarinUtterance(for: note.hanzi))
+    }
+
+    private func prepareSpeech(for note: VocabularyNote?) {
+        guard let note else { return }
+        _ = cachedMandarinVoice()
+        warmSpeechSynthesizerIfNeeded(with: note.hanzi)
+    }
+
+    private func warmSpeechSynthesizerIfNeeded(with text: String) {
+        guard !hasWarmedSpeechSynthesizer else { return }
+        hasWarmedSpeechSynthesizer = true
+        speechSynthesizer.speak(mandarinUtterance(for: text, volume: 0))
+    }
+
+    private func mandarinUtterance(for text: String, volume: Float = 1) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = cachedMandarinVoice()
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.92
-        speechSynthesizer.speak(utterance)
+        utterance.volume = volume
+        return utterance
+    }
+
+    private func cachedMandarinVoice() -> AVSpeechSynthesisVoice? {
+        if let preferredSpeechVoice {
+            return preferredSpeechVoice
+        }
+        let voice = preferredMandarinVoice()
+        preferredSpeechVoice = voice
+        return voice
     }
 
     private func preferredMandarinVoice() -> AVSpeechSynthesisVoice? {
@@ -497,7 +530,9 @@ private struct MultipleChoiceControls: View {
 
             ForEach(prompt.choices, id: \.self) { choice in
                 Button {
-                    selectedChoice = choice
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        selectedChoice = choice
+                    }
                     chooseAnswer(choice)
                 } label: {
                     MultipleChoiceButtonLabel(
