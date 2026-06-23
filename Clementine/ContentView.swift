@@ -237,6 +237,7 @@ struct ContentView: View {
         let correct = answer == correctAnswer(for: activeCard, note: activeNote)
         let elapsed = Date().timeIntervalSince(responseStartedAt)
         let grade = ReviewGradeMapper.multipleChoice(correct: correct, responseSeconds: elapsed)
+        speak(activeNote)
         applyReview(
             card: activeCard,
             note: activeNote,
@@ -305,6 +306,7 @@ struct ContentView: View {
     }
 
     private func speak(_ note: VocabularyNote) {
+        speechSynthesizer.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: note.hanzi)
         utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.82
@@ -401,6 +403,7 @@ private struct StudyCardView: View {
                 RecallControls(
                     note: prompt.note,
                     isAnswerRevealed: $isAnswerRevealed,
+                    speak: speak,
                     gradeRecall: gradeRecall
                 )
             } else {
@@ -527,6 +530,7 @@ private struct MultipleChoiceButtonLabel: View {
 private struct RecallControls: View {
     var note: VocabularyNote
     @Binding var isAnswerRevealed: Bool
+    var speak: (VocabularyNote) -> Void
     var gradeRecall: (Bool, Bool) -> Void
 
     var body: some View {
@@ -601,6 +605,7 @@ private struct RecallControls: View {
 
                 Button {
                     isAnswerRevealed = true
+                    speak(note)
                 } label: {
                     Label("Reveal", systemImage: "eye")
                         .frame(maxWidth: 260)
