@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var speechSynthesizer = AVSpeechSynthesizer()
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
+    @State private var servingCount = 0
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -128,6 +129,7 @@ struct ContentView: View {
                 card: activeCard,
                 correctAnswer: correctAnswer(for: activeCard, note: activeNote),
                 choices: choices(for: activeCard, note: activeNote),
+                servingCount: servingCount,
                 dueCount: dueCount,
                 newCount: newCount
             )
@@ -168,6 +170,7 @@ struct ContentView: View {
         activeCardKey = selectedCandidate.flatMap { candidate in
             cards.first { $0.id == candidate.id }?.cardKey
         }
+        servingCount = decision.orderedCards.count
         if let selectedCandidate {
             rememberShown(candidate: selectedCandidate)
         }
@@ -346,6 +349,7 @@ private struct StudyPrompt {
     var card: StudyCard
     var correctAnswer: String
     var choices: [String]
+    var servingCount: Int
     var dueCount: Int
     var newCount: Int
 }
@@ -392,7 +396,12 @@ private struct StudyCardView: View {
 
     var body: some View {
         VStack(spacing: 22) {
-            StudyStatusBar(dueCount: prompt.dueCount, newCount: prompt.newCount, kind: prompt.card.kind)
+            StudyStatusBar(
+                servingCount: prompt.servingCount,
+                dueCount: prompt.dueCount,
+                newCount: prompt.newCount,
+                kind: prompt.card.kind
+            )
 
             Spacer(minLength: 8)
 
@@ -437,13 +446,14 @@ private struct StudyCardView: View {
 }
 
 private struct StudyStatusBar: View {
+    var servingCount: Int
     var dueCount: Int
     var newCount: Int
     var kind: CardKind
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(dueCount) due · \(newCount) unseen · \(kind.title)")
+            Text("\(servingCount) serving · \(dueCount) due · \(newCount) unseen · \(kind.title)")
             Spacer()
         }
         .font(.callout)
