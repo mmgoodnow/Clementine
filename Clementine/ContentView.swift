@@ -799,27 +799,27 @@ private struct ProgressViewContent: View {
         List {
             Section {
                 HStack(spacing: 14) {
-                    ProgressMetric(title: "Vocabulary", value: "\(notes.count)", systemImage: "character.book.closed")
-                    ProgressMetric(title: "Cards", value: "\(cards.count)", systemImage: "rectangle.stack")
+                    ProgressMetric(title: "Introduced", value: "\(introducedVocabularyCount)", systemImage: "character.book.closed")
+                    ProgressMetric(title: "Deck", value: "\(notes.count)", systemImage: "rectangle.stack")
                     ProgressMetric(title: "Reviews", value: "\(reviews.count)", systemImage: "checkmark.circle")
                 }
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             }
 
-            Section("Vocabulary") {
-                if vocabularyPoints.isEmpty {
-                    EmptyChartMessage(text: "Vocabulary growth will appear after the deck is installed.")
+            Section("Introduced Vocabulary") {
+                if introducedVocabularyPoints.isEmpty {
+                    EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
-                    Chart(vocabularyPoints) { point in
+                    Chart(introducedVocabularyPoints) { point in
                         AreaMark(
                             x: .value("Day", point.day, unit: .day),
-                            y: .value("Vocabulary", point.count)
+                            y: .value("Introduced", point.count)
                         )
                         .foregroundStyle(.green.opacity(0.16))
 
                         LineMark(
                             x: .value("Day", point.day, unit: .day),
-                            y: .value("Vocabulary", point.count)
+                            y: .value("Introduced", point.count)
                         )
                         .foregroundStyle(.green)
                         .interpolationMethod(.stepEnd)
@@ -828,7 +828,7 @@ private struct ProgressViewContent: View {
                         AxisMarks(position: .leading)
                     }
                     .frame(height: 180)
-                    .accessibilityLabel("Vocabulary over time")
+                    .accessibilityLabel("Introduced vocabulary over time")
                 }
             }
 
@@ -891,28 +891,35 @@ private struct ProgressViewContent: View {
         .navigationTitle("Progress")
     }
 
-    private var vocabularyPoints: [VocabularyPoint] {
-        guard !notes.isEmpty else { return [] }
+    private var introducedVocabularyCount: Int {
+        Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count
+    }
+
+    private var introducedVocabularyPoints: [VocabularyPoint] {
+        guard !reviews.isEmpty else { return [] }
 
         let calendar = Calendar.current
         let end = calendar.startOfDay(for: Date())
-        let earliest = notes
-            .map { calendar.startOfDay(for: $0.createdAt) }
+        let earliest = reviews
+            .map { calendar.startOfDay(for: $0.reviewedAt) }
             .min() ?? end
         let lastThirtyDays = calendar.date(byAdding: .day, value: -29, to: end) ?? end
         let minimumWindowStart = calendar.date(byAdding: .day, value: -6, to: end) ?? end
         let start = min(max(earliest, lastThirtyDays), minimumWindowStart)
         let days = dateRange(from: start, to: end)
-        let noteDays = notes
-            .map { calendar.startOfDay(for: $0.createdAt) }
+        let firstReviewDays = Dictionary(grouping: reviews.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+            .values
+            .compactMap { noteReviews in
+                noteReviews.map(\.reviewedAt).min().map { calendar.startOfDay(for: $0) }
+            }
             .sorted()
-        var noteIndex = 0
+        var introducedIndex = 0
 
         return days.map { day in
-            while noteIndex < noteDays.count, noteDays[noteIndex] <= day {
-                noteIndex += 1
+            while introducedIndex < firstReviewDays.count, firstReviewDays[introducedIndex] <= day {
+                introducedIndex += 1
             }
-            return VocabularyPoint(day: day, count: noteIndex)
+            return VocabularyPoint(day: day, count: introducedIndex)
         }
     }
 
