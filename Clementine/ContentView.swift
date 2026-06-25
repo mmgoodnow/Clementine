@@ -14,6 +14,7 @@ struct ContentView: View {
 
     @State private var selectedTab: AppTab = .study
     @State private var activeCardKey: String?
+    @State private var activeChoiceSeed = UUID().uuidString
     @State private var selectedChoice: String?
     @State private var isAnswerRevealed = false
     @State private var responseStartedAt = Date()
@@ -185,6 +186,7 @@ struct ContentView: View {
         } else if isServingPassActive, servingCount <= 0 {
             endServingPass()
             activeCardKey = nil
+            activeChoiceSeed = UUID().uuidString
             selectedChoice = nil
             isAnswerRevealed = false
             return
@@ -211,6 +213,9 @@ struct ContentView: View {
         activeCardKey = selectedCandidate.flatMap { candidate in
             cards.first { $0.id == candidate.id }?.cardKey
         }
+        activeChoiceSeed = selectedCandidate.map { candidate in
+            "\(candidate.id.uuidString)#\(now.timeIntervalSinceReferenceDate)#\(reviews.count)"
+        } ?? UUID().uuidString
         if selectedCandidate == nil {
             endServingPass()
         } else if !isServingPassActive {
@@ -286,7 +291,7 @@ struct ContentView: View {
         return MultipleChoiceBuilder.choices(
             correctAnswer: correct,
             distractorPool: pool,
-            seed: card.cardKey,
+            seed: "\(card.cardKey)#\(activeChoiceSeed)",
             preferredSyllableCount: preferredSyllableCount
         )
     }

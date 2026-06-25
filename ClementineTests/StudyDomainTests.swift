@@ -44,6 +44,58 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
+    func testPinyinDistractorsDoNotFallBackToWrongSyllableCount() {
+        let correct = "zhōng guó"
+        let choices = MultipleChoiceBuilder.choices(
+            correctAnswer: correct,
+            distractorPool: ["èr", "bù", "wǒ", "bà ba", "lǎo shī"],
+            seed: "hsk2-9999#hanziToPinyin",
+            preferredSyllableCount: MultipleChoiceBuilder.pinyinSyllableCount(correct)
+        )
+
+        XCTAssertEqual(choices.count, 3)
+        XCTAssertTrue(choices.contains(correct))
+        XCTAssertTrue(
+            choices
+                .filter { $0 != correct }
+                .allSatisfy { MultipleChoiceBuilder.pinyinSyllableCount($0) == 2 }
+        )
+    }
+
+    func testMultipleChoiceSeedIsStableButCanVaryBetweenPresentations() {
+        let correct = "to study"
+        let pool = [
+            "to swim",
+            "yellow",
+            "surrounding area",
+            "to live",
+            "to ask",
+            "to rest",
+            "to arrive",
+            "to prepare"
+        ]
+        let first = MultipleChoiceBuilder.choices(
+            correctAnswer: correct,
+            distractorPool: pool,
+            seed: "card#presentation-1"
+        )
+        let samePresentation = MultipleChoiceBuilder.choices(
+            correctAnswer: correct,
+            distractorPool: pool,
+            seed: "card#presentation-1"
+        )
+        let presentationVariants = (2...12).map { index in
+            MultipleChoiceBuilder.choices(
+                correctAnswer: correct,
+                distractorPool: pool,
+                seed: "card#presentation-\(index)"
+            )
+        }
+
+        XCTAssertEqual(first, samePresentation)
+        XCTAssertTrue(presentationVariants.contains { $0 != first })
+    }
+
     func testAdaptivePolicyPrefersDueReviews() {
         let now = Date(timeIntervalSince1970: 1_000)
         let due = SessionCardCandidate(id: UUID(), dueAt: now.addingTimeInterval(-60), isNew: false, recentLapses: 0)

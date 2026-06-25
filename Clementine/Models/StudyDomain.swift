@@ -142,10 +142,7 @@ enum MultipleChoiceBuilder {
             let matchingSyllableCount = rankedDistractors.filter {
                 pinyinSyllableCount($0) == preferredSyllableCount
             }
-            let fallback = rankedDistractors.filter {
-                pinyinSyllableCount($0) != preferredSyllableCount
-            }
-            distractors = Array((matchingSyllableCount + fallback).prefix(distractorCount))
+            distractors = Array(matchingSyllableCount.prefix(distractorCount))
         } else {
             distractors = Array(rankedDistractors.prefix(distractorCount))
         }
