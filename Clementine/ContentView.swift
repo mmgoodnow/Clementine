@@ -45,7 +45,12 @@ struct ContentView: View {
             .tag(AppTab.study)
 
             NavigationStack {
-                ProgressViewContent(notes: notes, cards: cards, reviews: reviews)
+                ProgressViewContent(
+                    notes: notes,
+                    cards: cards,
+                    reviews: reviews,
+                    learningPace: settings?.learningPace ?? .balanced
+                )
             }
             .tabItem { Label("Progress", systemImage: "chart.bar") }
             .tag(AppTab.progress)
@@ -810,6 +815,7 @@ private struct ProgressViewContent: View {
     var notes: [VocabularyNote]
     var cards: [StudyCard]
     var reviews: [ReviewEvent]
+    var learningPace: LearningPace
 
     var body: some View {
         List {
@@ -820,6 +826,76 @@ private struct ProgressViewContent: View {
                     ProgressMetric(title: "Reviews", value: "\(reviews.count)", systemImage: "checkmark.circle")
                 }
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
+            Section("Today") {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 14) {
+                        ProgressMetric(
+                            title: "Next New",
+                            value: "\(intakeForecast.newCardsToServe)",
+                            systemImage: "plus.rectangle.on.rectangle"
+                        )
+                        ProgressMetric(
+                            title: "7-Day Due",
+                            value: "\(intakeForecast.forecastedReviewLoad)",
+                            systemImage: "calendar"
+                        )
+                        ProgressMetric(
+                            title: "Limited By",
+                            value: intakeForecast.limitingFactor.rawValue,
+                            systemImage: "gauge.with.dots.needle.50percent"
+                        )
+                    }
+
+                    VStack(spacing: 10) {
+                        ForecastRow(
+                            title: "Review budget",
+                            value: "\(intakeForecast.forecastedReviewLoad) / \(intakeForecast.reviewLoadBudget)"
+                        )
+                        ForecastRow(
+                            title: "Available review room",
+                            value: "\(intakeForecast.availableReviewBudget)"
+                        )
+                        ForecastRow(
+                            title: "Per-new-card cost",
+                            value: intakeForecast.expectedReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
+                        )
+                        ForecastRow(
+                            title: "Accuracy",
+                            value: intakeForecast.recentAccuracy.formatted(.percent.precision(.fractionLength(0)))
+                        )
+                        ForecastRow(
+                            title: "Retention target",
+                            value: intakeForecast.desiredRetention.formatted(.percent.precision(.fractionLength(0)))
+                        )
+                        ForecastRow(
+                            title: "Today",
+                            value: "\(intakeForecast.newCardsStudiedToday) / \(intakeForecast.dayLimit) new"
+                        )
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
+            Section("Review Forecast") {
+                Chart {
+                    ForEach(reviewLoadForecast) { point in
+                        BarMark(
+                            x: .value("Day", point.day, unit: .day),
+                            y: .value("Due", point.count)
+                        )
+                        .foregroundStyle(.teal)
+                    }
+                    RuleMark(y: .value("Daily Budget", Double(learningPace.reviewLoadBudget) / 7.0))
+                        .foregroundStyle(.secondary.opacity(0.45))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading)
+                }
+                .frame(height: 180)
+                .accessibilityLabel("Forecasted review load for the next seven days")
             }
 
             Section("Introduced Vocabulary") {
@@ -909,6 +985,56 @@ private struct ProgressViewContent: View {
 
     private var introducedVocabularyCount: Int {
         Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count
+    }
+
+    private var intakeForecast: NewCardIntakeForecast {
+        AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: sessionCandidates,
+            pace: learningPace,
+            recentAccuracy: recentAccuracy,
+            newCardsStudiedToday: newCardsStudiedToday,
+            now: Date()
+        )
+    }
+
+    private var reviewLoadForecast: [ReviewLoadForecastDay] {
+        AdaptiveSessionPolicy.reviewLoadForecastByDay(from: sessionCandidates, now: Date())
+    }
+
+    private var sessionCandidates: [SessionCardCandidate] {
+        cards
+            .filter { !$0.isSuspended }
+            .map { card in
+                SessionCardCandidate(
+                    id: card.id,
+                    dueAt: card.dueAt,
+                    isNew: card.fsrsCardData == nil,
+                    recentLapses: 0,
+                    noteSourceID: card.noteSourceID,
+                    kind: card.kind
+                )
+            }
+    }
+
+    private var recentAccuracy: Double {
+        let recent = reviews.prefix(20)
+        guard !recent.isEmpty else { return 1 }
+        return Double(recent.filter(\.wasCorrect).count) / Double(recent.count)
+    }
+
+    private var newCardsStudiedToday: Int {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        var seenCardKeys = Set<String>()
+        var count = 0
+
+        for review in reviews.sorted(by: { $0.reviewedAt < $1.reviewedAt }) {
+            guard seenCardKeys.insert(review.cardKey).inserted else { continue }
+            if review.reviewedAt >= startOfToday {
+                count += 1
+            }
+        }
+
+        return count
     }
 
     private var introducedVocabularyPoints: [VocabularyPoint] {
@@ -1017,6 +1143,24 @@ private struct ProgressMetric: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 6)
+    }
+}
+
+private struct ForecastRow: View {
+    var title: String
+    var value: String
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            Text(value)
+                .fontWeight(.medium)
+                .monospacedDigit()
+                .multilineTextAlignment(.trailing)
+        }
+        .font(.callout)
     }
 }
 

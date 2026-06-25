@@ -210,6 +210,37 @@ struct SessionDecision: Equatable {
     var shouldStopNaturally: Bool
 }
 
+struct NewCardIntakeForecast: Equatable {
+    enum LimitingFactor: String, Equatable {
+        case reviewBudget = "Review budget"
+        case passLimit = "Pass limit"
+        case dailyLimit = "Daily limit"
+        case deck = "Deck"
+        case none = "No limit"
+    }
+
+    var newCardsToServe: Int
+    var availableNewCards: Int
+    var forecastedReviewLoad: Int
+    var reviewLoadBudget: Int
+    var availableReviewBudget: Int
+    var recentAccuracy: Double
+    var desiredRetention: Double
+    var expectedReviewLoadPerNewCard: Double
+    var workloadAllowance: Int
+    var passLimit: Int
+    var dayLimit: Int
+    var newCardsStudiedToday: Int
+    var dailyRemaining: Int
+    var limitingFactor: LimitingFactor
+}
+
+struct ReviewLoadForecastDay: Identifiable, Equatable {
+    var id: Date { day }
+    var day: Date
+    var count: Int
+}
+
 enum AdaptiveSessionPolicy {
     private static let forecastHorizonDays = 7
 
@@ -221,7 +252,14 @@ enum AdaptiveSessionPolicy {
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
-        let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
+        let intakeForecast = newCardIntakeForecast(
+            from: candidates,
+            pace: pace,
+            recentAccuracy: recentAccuracy,
+            newCardsStudiedToday: newCardsStudiedToday,
+            now: now,
+            forceNewCards: forceNewCards
+        )
         let dueReviews = candidates
             .filter { !$0.isNew && $0.dueAt <= now }
             .sorted { lhs, rhs in
@@ -234,15 +272,7 @@ enum AdaptiveSessionPolicy {
         let newCards = candidates
             .filter(\.isNew)
             .orderedForNewCardIntroduction()
-            .prefix(
-                newCardAllowance(
-                    pace: pace,
-                    forecastedReviewLoad: forecastedReviewLoad,
-                    recentAccuracy: recentAccuracy,
-                    newCardsStudiedToday: newCardsStudiedToday,
-                    forceNewCards: forceNewCards
-                )
-            )
+            .prefix(intakeForecast.newCardsToServe)
 
         let selected = forceNewCards ? Array(newCards) + dueReviews : dueReviews + Array(newCards)
         return SessionDecision(
@@ -286,6 +316,82 @@ enum AdaptiveSessionPolicy {
         }.count
     }
 
+    static func reviewLoadForecastByDay(from candidates: [SessionCardCandidate], now: Date) -> [ReviewLoadForecastDay] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: now)
+        let days = (0..<forecastHorizonDays).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: start)
+        }
+        let grouped = Dictionary(grouping: candidates.filter { !$0.isNew }) {
+            calendar.startOfDay(for: max($0.dueAt, now))
+        }
+
+        return days.map { day in
+            ReviewLoadForecastDay(day: day, count: grouped[day]?.count ?? 0)
+        }
+    }
+
+    static func newCardIntakeForecast(
+        from candidates: [SessionCardCandidate],
+        pace: LearningPace,
+        recentAccuracy: Double,
+        newCardsStudiedToday: Int = 0,
+        now: Date,
+        forceNewCards: Bool = false
+    ) -> NewCardIntakeForecast {
+        let availableNewCards = candidates.filter(\.isNew).count
+        let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
+        let availableLoad = max(0, pace.reviewLoadBudget - forecastedReviewLoad)
+        let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
+
+        let desiredRetention = desiredRetention(
+            pace: pace,
+            forecastedReviewLoad: forecastedReviewLoad,
+            recentAccuracy: recentAccuracy
+        )
+        let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.98)
+        let expectedReviewLoad = expectedReviewLoadPerNewCard(
+            desiredRetention: desiredRetention,
+            recentAccuracy: normalizedAccuracy
+        )
+        let workloadAllowance = availableLoad > 0
+            ? Int(floor(Double(availableLoad) / expectedReviewLoad))
+            : forcedBatch
+        let dailyRemaining = max(0, pace.newCardsPerDayLimit - newCardsStudiedToday)
+        let passLimit = forceNewCards
+            ? min(pace.forcedContinueNewCardBatch, pace.newCardsPerPassLimit)
+            : pace.newCardsPerPassLimit
+        let allowance = min(
+            max(forcedBatch, workloadAllowance),
+            passLimit,
+            dailyRemaining
+        )
+        let newCardsToServe = min(max(0, allowance), availableNewCards)
+
+        return NewCardIntakeForecast(
+            newCardsToServe: newCardsToServe,
+            availableNewCards: availableNewCards,
+            forecastedReviewLoad: forecastedReviewLoad,
+            reviewLoadBudget: pace.reviewLoadBudget,
+            availableReviewBudget: availableLoad,
+            recentAccuracy: recentAccuracy,
+            desiredRetention: desiredRetention,
+            expectedReviewLoadPerNewCard: expectedReviewLoad,
+            workloadAllowance: workloadAllowance,
+            passLimit: passLimit,
+            dayLimit: pace.newCardsPerDayLimit,
+            newCardsStudiedToday: newCardsStudiedToday,
+            dailyRemaining: dailyRemaining,
+            limitingFactor: limitingFactor(
+                newCardsToServe: newCardsToServe,
+                availableNewCards: availableNewCards,
+                workloadAllowance: workloadAllowance,
+                passLimit: passLimit,
+                dailyRemaining: dailyRemaining
+            )
+        )
+    }
+
     static func nextCandidate(
         from orderedCards: [SessionCardCandidate],
         recentCardIDs: [UUID],
@@ -302,39 +408,37 @@ enum AdaptiveSessionPolicy {
         } ?? orderedCards.first
     }
 
-    private static func newCardAllowance(
-        pace: LearningPace,
-        forecastedReviewLoad: Int,
-        recentAccuracy: Double,
-        newCardsStudiedToday: Int,
-        forceNewCards: Bool
-    ) -> Int {
-        let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
-        let availableLoad = pace.reviewLoadBudget - forecastedReviewLoad
-        guard availableLoad > 0 else { return min(forcedBatch, pace.newCardsPerPassLimit) }
-
+    private static func expectedReviewLoadPerNewCard(
+        desiredRetention: Double,
+        recentAccuracy normalizedAccuracy: Double
+    ) -> Double {
         let expectedRecallCost = 1.0
         let expectedForgetCost = 2.5
-        let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.98)
         let expectedReviewCost =
             normalizedAccuracy * expectedRecallCost +
             (1 - normalizedAccuracy) * expectedForgetCost
-        let retentionPressure = desiredRetention(
-            pace: pace,
-            forecastedReviewLoad: forecastedReviewLoad,
-            recentAccuracy: recentAccuracy
-        ) / normalizedAccuracy
-        let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.5))
-        let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
-        let passAllowance: Int
-        if forceNewCards {
-            passAllowance = min(pace.forcedContinueNewCardBatch, pace.newCardsPerPassLimit)
-        } else {
-            let dailyRemaining = max(0, pace.newCardsPerDayLimit - newCardsStudiedToday)
-            passAllowance = min(dailyRemaining, pace.newCardsPerPassLimit)
-        }
+        let retentionPressure = desiredRetention / normalizedAccuracy
+        return max(2.0, ceil(expectedReviewCost * retentionPressure * 3.5))
+    }
 
-        return min(max(forcedBatch, workloadAllowance), passAllowance)
+    private static func limitingFactor(
+        newCardsToServe: Int,
+        availableNewCards: Int,
+        workloadAllowance: Int,
+        passLimit: Int,
+        dailyRemaining: Int
+    ) -> NewCardIntakeForecast.LimitingFactor {
+        guard newCardsToServe > 0 else {
+            if dailyRemaining == 0 { return .dailyLimit }
+            return availableNewCards == 0 ? .deck : .reviewBudget
+        }
+        if newCardsToServe == availableNewCards { return .deck }
+
+        let minimum = min(workloadAllowance, passLimit, dailyRemaining)
+        if dailyRemaining == minimum { return .dailyLimit }
+        if passLimit == minimum { return .passLimit }
+        if workloadAllowance == minimum { return .reviewBudget }
+        return .none
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {

@@ -428,6 +428,83 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(atSoftLimit, 0)
     }
 
+    func testNewCardIntakeForecastExplainsPassLimit() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCards = (0..<700).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.newCardsToServe, LearningPace.balanced.newCardsPerPassLimit)
+        XCTAssertEqual(forecast.limitingFactor, .passLimit)
+        XCTAssertGreaterThan(forecast.workloadAllowance, forecast.passLimit)
+    }
+
+    func testNewCardIntakeForecastExplainsReviewBudgetLimit() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let futureReviews = (0..<400).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 60),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+        let newCards = (0..<700).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: futureReviews + newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.limitingFactor, .reviewBudget)
+        XCTAssertEqual(forecast.newCardsToServe, forecast.workloadAllowance)
+        XCTAssertLessThan(forecast.newCardsToServe, forecast.passLimit)
+    }
+
+    func testNewCardIntakeForecastExplainsDailyLimit() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCards = (0..<700).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            newCardsStudiedToday: LearningPace.balanced.newCardsPerDayLimit - 4,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.newCardsToServe, 4)
+        XCTAssertEqual(forecast.limitingFactor, .dailyLimit)
+    }
+
     func testForcedContinueIntroducesNewCardsDespiteLowAccuracy() {
         let now = Date(timeIntervalSince1970: 1_000)
         let futureReviews = (0..<LearningPace.low.reviewLoadBudget).map { index in
