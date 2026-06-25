@@ -173,9 +173,9 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(LearningPace.low.reviewLoadBudget, 210)
         XCTAssertEqual(LearningPace.balanced.reviewLoadBudget, 420)
         XCTAssertEqual(LearningPace.high.reviewLoadBudget, 840)
-        XCTAssertEqual(low, LearningPace.low.newCardsPerPassLimit)
-        XCTAssertEqual(balanced, LearningPace.balanced.newCardsPerPassLimit)
-        XCTAssertEqual(high, LearningPace.high.newCardsPerPassLimit)
+        XCTAssertEqual(low, LearningPace.low.normalNewCardsPerPassTarget)
+        XCTAssertEqual(balanced, LearningPace.balanced.normalNewCardsPerPassTarget)
+        XCTAssertEqual(high, LearningPace.high.normalNewCardsPerPassTarget)
         XCTAssertLessThan(low, balanced)
         XCTAssertLessThan(balanced, high)
     }
@@ -235,7 +235,7 @@ final class StudyDomainTests: XCTestCase {
 
     func testLowerAccuracyReducesButDoesNotZeroNewCardAllowance() {
         let now = Date(timeIntervalSince1970: 1_000)
-        let futureReviews = (0..<350).map { index in
+        let futureReviews = (0..<400).map { index in
             SessionCardCandidate(
                 id: UUID(),
                 dueAt: now.addingTimeInterval(Double(index + 1) * 60),
@@ -328,7 +328,7 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
-    func testHighPaceCapsInitialBatchToNewCardsPerPassLimit() {
+    func testHighPaceUsesNormalNewCardTargetBelowHardCap() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = (0..<700).map { index in
             SessionCardCandidate(
@@ -352,12 +352,13 @@ final class StudyDomainTests: XCTestCase {
         ).orderedCards.filter(\.isNew).count
 
         XCTAssertGreaterThan(high, low)
-        XCTAssertEqual(high, LearningPace.high.newCardsPerPassLimit)
+        XCTAssertEqual(high, LearningPace.high.normalNewCardsPerPassTarget)
+        XCTAssertLessThan(high, LearningPace.high.newCardsPerPassLimit)
     }
 
     func testForecastedReviewLoadReducesNewCards() {
         let now = Date(timeIntervalSince1970: 1_000)
-        let futureReviews = (0..<350).map { index in
+        let futureReviews = (0..<400).map { index in
             SessionCardCandidate(
                 id: UUID(),
                 dueAt: now.addingTimeInterval(Double(index + 1) * 60),
@@ -388,6 +389,44 @@ final class StudyDomainTests: XCTestCase {
         ).orderedCards.filter(\.isNew).count
 
         XCTAssertLessThan(withBacklog, withoutBacklog)
+    }
+
+    func testNewCardsStudiedTodayReducesNormalNewCardAllowance() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let newCards = (0..<700).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let freshDay = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            newCardsStudiedToday: 0,
+            now: now
+        ).orderedCards.filter(\.isNew).count
+        let nearSoftLimit = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            newCardsStudiedToday: LearningPace.balanced.normalNewCardsPerDaySoftLimit - 4,
+            now: now
+        ).orderedCards.filter(\.isNew).count
+        let atSoftLimit = AdaptiveSessionPolicy.chooseCards(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            newCardsStudiedToday: LearningPace.balanced.normalNewCardsPerDaySoftLimit,
+            now: now
+        ).orderedCards.filter(\.isNew).count
+
+        XCTAssertEqual(freshDay, LearningPace.balanced.normalNewCardsPerPassTarget)
+        XCTAssertEqual(nearSoftLimit, 4)
+        XCTAssertEqual(atSoftLimit, 0)
     }
 
     func testForcedContinueIntroducesNewCardsDespiteLowAccuracy() {

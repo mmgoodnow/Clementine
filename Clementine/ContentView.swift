@@ -100,6 +100,21 @@ struct ContentView: View {
         return Double(correct) / Double(recent.count)
     }
 
+    private var newCardsStudiedToday: Int {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        var seenCardKeys = Set<String>()
+        var count = 0
+
+        for review in reviews.sorted(by: { $0.reviewedAt < $1.reviewedAt }) {
+            guard seenCardKeys.insert(review.cardKey).inserted else { continue }
+            if review.reviewedAt >= startOfToday {
+                count += 1
+            }
+        }
+
+        return count
+    }
+
     private func currentDesiredRetention(now: Date) -> Double {
         AdaptiveSessionPolicy.desiredRetention(
             pace: settings?.learningPace ?? .balanced,
@@ -177,6 +192,7 @@ struct ContentView: View {
             from: candidates,
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
+            newCardsStudiedToday: newCardsStudiedToday,
             now: now,
             forceNewCards: forceNewCards
         )

@@ -56,6 +56,22 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var normalNewCardsPerPassTarget: Int {
+        switch self {
+        case .low: 6
+        case .balanced: 12
+        case .high: 18
+        }
+    }
+
+    var normalNewCardsPerDaySoftLimit: Int {
+        switch self {
+        case .low: 12
+        case .balanced: 24
+        case .high: 36
+        }
+    }
+
     var baselineRetention: Double {
         switch self {
         case .low: 0.88
@@ -209,6 +225,7 @@ enum AdaptiveSessionPolicy {
         from candidates: [SessionCardCandidate],
         pace: LearningPace,
         recentAccuracy: Double,
+        newCardsStudiedToday: Int = 0,
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
@@ -230,6 +247,7 @@ enum AdaptiveSessionPolicy {
                     pace: pace,
                     forecastedReviewLoad: forecastedReviewLoad,
                     recentAccuracy: recentAccuracy,
+                    newCardsStudiedToday: newCardsStudiedToday,
                     forceNewCards: forceNewCards
                 )
             )
@@ -296,6 +314,7 @@ enum AdaptiveSessionPolicy {
         pace: LearningPace,
         forecastedReviewLoad: Int,
         recentAccuracy: Double,
+        newCardsStudiedToday: Int,
         forceNewCards: Bool
     ) -> Int {
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
@@ -315,8 +334,15 @@ enum AdaptiveSessionPolicy {
         ) / normalizedAccuracy
         let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
         let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
+        let passAllowance: Int
+        if forceNewCards {
+            passAllowance = min(pace.forcedContinueNewCardBatch, pace.newCardsPerPassLimit)
+        } else {
+            let dailyRemaining = max(0, pace.normalNewCardsPerDaySoftLimit - newCardsStudiedToday)
+            passAllowance = min(pace.normalNewCardsPerPassTarget, dailyRemaining, pace.newCardsPerPassLimit)
+        }
 
-        return min(max(forcedBatch, workloadAllowance), pace.newCardsPerPassLimit)
+        return min(max(forcedBatch, workloadAllowance), passAllowance)
     }
 
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
