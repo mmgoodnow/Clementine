@@ -173,9 +173,9 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(LearningPace.low.reviewLoadBudget, 210)
         XCTAssertEqual(LearningPace.balanced.reviewLoadBudget, 420)
         XCTAssertEqual(LearningPace.high.reviewLoadBudget, 840)
-        XCTAssertEqual(low, LearningPace.low.normalNewCardsPerPassTarget)
-        XCTAssertEqual(balanced, LearningPace.balanced.normalNewCardsPerPassTarget)
-        XCTAssertEqual(high, LearningPace.high.normalNewCardsPerPassTarget)
+        XCTAssertEqual(low, LearningPace.low.newCardsPerPassLimit)
+        XCTAssertEqual(balanced, LearningPace.balanced.newCardsPerPassLimit)
+        XCTAssertEqual(high, LearningPace.high.newCardsPerPassLimit)
         XCTAssertLessThan(low, balanced)
         XCTAssertLessThan(balanced, high)
     }
@@ -328,7 +328,7 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
-    func testHighPaceUsesNormalNewCardTargetBelowHardCap() {
+    func testHighPaceCanUseForecastBelowHardCapWhenAccuracyIsPoor() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = (0..<700).map { index in
             SessionCardCandidate(
@@ -352,7 +352,6 @@ final class StudyDomainTests: XCTestCase {
         ).orderedCards.filter(\.isNew).count
 
         XCTAssertGreaterThan(high, low)
-        XCTAssertEqual(high, LearningPace.high.normalNewCardsPerPassTarget)
         XCTAssertLessThan(high, LearningPace.high.newCardsPerPassLimit)
     }
 
@@ -413,18 +412,18 @@ final class StudyDomainTests: XCTestCase {
             from: newCards,
             pace: .balanced,
             recentAccuracy: 0.9,
-            newCardsStudiedToday: LearningPace.balanced.normalNewCardsPerDaySoftLimit - 4,
+            newCardsStudiedToday: LearningPace.balanced.newCardsPerDayLimit - 4,
             now: now
         ).orderedCards.filter(\.isNew).count
         let atSoftLimit = AdaptiveSessionPolicy.chooseCards(
             from: newCards,
             pace: .balanced,
             recentAccuracy: 0.9,
-            newCardsStudiedToday: LearningPace.balanced.normalNewCardsPerDaySoftLimit,
+            newCardsStudiedToday: LearningPace.balanced.newCardsPerDayLimit,
             now: now
         ).orderedCards.filter(\.isNew).count
 
-        XCTAssertEqual(freshDay, LearningPace.balanced.normalNewCardsPerPassTarget)
+        XCTAssertEqual(freshDay, LearningPace.balanced.newCardsPerPassLimit)
         XCTAssertEqual(nearSoftLimit, 4)
         XCTAssertEqual(atSoftLimit, 0)
     }

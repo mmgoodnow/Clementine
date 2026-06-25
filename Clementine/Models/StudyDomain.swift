@@ -50,25 +50,17 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
 
     var newCardsPerPassLimit: Int {
         switch self {
-        case .low: 12
-        case .balanced: 24
-        case .high: 36
+        case .low: 18
+        case .balanced: 36
+        case .high: 72
         }
     }
 
-    var normalNewCardsPerPassTarget: Int {
+    var newCardsPerDayLimit: Int {
         switch self {
-        case .low: 6
-        case .balanced: 12
-        case .high: 18
-        }
-    }
-
-    var normalNewCardsPerDaySoftLimit: Int {
-        switch self {
-        case .low: 12
-        case .balanced: 24
-        case .high: 36
+        case .low: 36
+        case .balanced: 72
+        case .high: 144
         }
     }
 
@@ -322,7 +314,7 @@ enum AdaptiveSessionPolicy {
         guard availableLoad > 0 else { return min(forcedBatch, pace.newCardsPerPassLimit) }
 
         let expectedRecallCost = 1.0
-        let expectedForgetCost = 2.0
+        let expectedForgetCost = 2.5
         let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.98)
         let expectedReviewCost =
             normalizedAccuracy * expectedRecallCost +
@@ -332,14 +324,14 @@ enum AdaptiveSessionPolicy {
             forecastedReviewLoad: forecastedReviewLoad,
             recentAccuracy: recentAccuracy
         ) / normalizedAccuracy
-        let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.0))
+        let expectedNewCardLoad = max(2.0, ceil(expectedReviewCost * retentionPressure * 3.5))
         let workloadAllowance = Int(floor(Double(availableLoad) / expectedNewCardLoad))
         let passAllowance: Int
         if forceNewCards {
             passAllowance = min(pace.forcedContinueNewCardBatch, pace.newCardsPerPassLimit)
         } else {
-            let dailyRemaining = max(0, pace.normalNewCardsPerDaySoftLimit - newCardsStudiedToday)
-            passAllowance = min(pace.normalNewCardsPerPassTarget, dailyRemaining, pace.newCardsPerPassLimit)
+            let dailyRemaining = max(0, pace.newCardsPerDayLimit - newCardsStudiedToday)
+            passAllowance = min(dailyRemaining, pace.newCardsPerPassLimit)
         }
 
         return min(max(forcedBatch, workloadAllowance), passAllowance)
