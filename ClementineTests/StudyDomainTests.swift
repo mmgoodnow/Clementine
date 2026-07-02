@@ -156,6 +156,35 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(counters.plannedTotal, 2)
     }
 
+    func testServingCountersCanReincludeOriginalCardAsReviewWhenItReturnsDue() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let cardID = UUID(uuidString: "00000000-0000-0000-0000-000000000011")!
+        var counters = ServingCounters(cards: [
+            candidate(id: cardID, noteSourceID: "hsk2-0001", isNew: true),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!, noteSourceID: "hsk2-0002", isNew: true),
+        ])
+
+        counters.consumeReview(
+            cardID: cardID,
+            noteSourceID: "hsk2-0001",
+            wasNew: true,
+            grade: .hard,
+            scheduledDueAt: now,
+            now: now
+        )
+
+        let returnedDueReview = candidate(id: cardID, noteSourceID: "hsk2-0001", isNew: false)
+
+        XCTAssertFalse(counters.contains(returnedDueReview))
+
+        counters.includeLiveChange(returnedDueReview)
+
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.review, 1)
+        XCTAssertEqual(counters.plannedTotal, 2)
+    }
+
     func testServingCountersRollGeneratedCardsUpToVocabularyEntries() {
         let now = Date(timeIntervalSince1970: 1_000)
         let meaningID = UUID(uuidString: "00000000-0000-0000-0000-000000000008")!

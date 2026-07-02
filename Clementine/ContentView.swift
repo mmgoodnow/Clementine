@@ -267,10 +267,15 @@ struct ContentView: View {
     }
 
     private func noteSelectedCandidate(_ candidate: SessionCardCandidate) {
-        if isServingPassActive, !servingPlannedCardIDs.contains(candidate.id) {
-            hasLivePlanChanged = true
-            servingPlannedCardIDs.insert(candidate.id)
+        guard isServingPassActive else { return }
+
+        if !servingCounters.contains(candidate) {
             servingCounters.includeLiveChange(candidate)
+        }
+
+        if !servingPlannedCardIDs.contains(candidate.id) {
+            servingPlannedCardIDs.insert(candidate.id)
+            hasLivePlanChanged = true
         }
     }
 
@@ -639,7 +644,7 @@ private struct StudyStatusBar: View {
             }
 
             if hasLivePlanChanged {
-                Text("Live plan changed from \(plannedServingCount) as reviews became due or Again cards returned.")
+                Text("This pass started with \(plannedServingCount); \(servingCount) remain after completed cards and returned reviews.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }

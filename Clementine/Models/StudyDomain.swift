@@ -312,6 +312,10 @@ struct ServingCounters: Equatable {
         plannedNoteKeys.insert(item.noteKey)
     }
 
+    func contains(_ candidate: SessionCardCandidate) -> Bool {
+        remainingItems[candidate.id] == ServingCounterItem(candidate: candidate)
+    }
+
     private var noteStates: [String: ServingCounterNoteState] {
         remainingItems.values.reduce(into: [:]) { states, item in
             var state = states[item.noteKey, default: ServingCounterNoteState()]
