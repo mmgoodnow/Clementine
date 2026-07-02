@@ -238,6 +238,54 @@ struct ReviewLoadForecastDay: Identifiable, Equatable {
     var count: Int
 }
 
+struct CardSelectionExplanation: Equatable {
+    var title: String
+    var detail: String
+}
+
+enum CardSelectionExplainer {
+    static func explanation(
+        isNew: Bool,
+        dueAt: Date,
+        duplicateCount: Int,
+        lastGrade: ReviewGrade?,
+        now: Date
+    ) -> CardSelectionExplanation {
+        if duplicateCount > 1 {
+            return CardSelectionExplanation(
+                title: "Duplicate record",
+                detail: "\(duplicateCount) local records share this card key."
+            )
+        }
+
+        if isNew {
+            return CardSelectionExplanation(
+                title: "New card",
+                detail: "Introduced by today's new-card allowance."
+            )
+        }
+
+        if lastGrade == .again {
+            return CardSelectionExplanation(
+                title: "Again",
+                detail: "You missed this card recently, so it came back sooner."
+            )
+        }
+
+        if dueAt <= now {
+            return CardSelectionExplanation(
+                title: "Due review",
+                detail: "FSRS says this card is ready to review."
+            )
+        }
+
+        return CardSelectionExplanation(
+            title: "Upcoming review",
+            detail: "Shown because you asked Clementine to continue."
+        )
+    }
+}
+
 enum AdaptiveSessionPolicy {
     private static let forecastHorizonDays = 7
 

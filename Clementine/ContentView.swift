@@ -13,7 +13,7 @@ struct ContentView: View {
     @Query private var settingsRecords: [UserSettings]
 
     @State private var selectedTab: AppTab = .study
-    @State private var activeCardKey: String?
+    @State private var activeCardID: UUID?
     @State private var activeChoiceSeed = UUID().uuidString
     @State private var selectedChoice: String?
     @State private var isAnswerRevealed = false
@@ -77,7 +77,7 @@ struct ContentView: View {
         .onChange(of: notes.count) { _, _ in
             deduplicateSyncedSeedData()
         }
-        .onChange(of: activeCardKey) { _, _ in
+        .onChange(of: activeCardID) { _, _ in
             prepareSpeech(for: activeNote)
         }
     }
@@ -133,8 +133,8 @@ struct ContentView: View {
     }
 
     private var activeCard: StudyCard? {
-        guard let activeCardKey else { return nil }
-        return cards.first { $0.cardKey == activeCardKey }
+        guard let activeCardID else { return nil }
+        return cards.first { $0.id == activeCardID }
     }
 
     private var activeNote: VocabularyNote? {
@@ -152,6 +152,18 @@ struct ContentView: View {
         }
 
         let newCount = cards.filter { !$0.isSuspended && $0.fsrsCardData == nil }.count
+        let now = Date()
+        let duplicateCount = cards.filter {
+            !$0.isSuspended && $0.cardKey == activeCard.cardKey
+        }.count
+        let lastReview = reviews.first { $0.cardKey == activeCard.cardKey }
+        let explanation = CardSelectionExplainer.explanation(
+            isNew: activeCard.fsrsCardData == nil,
+            dueAt: activeCard.dueAt,
+            duplicateCount: duplicateCount,
+            lastGrade: lastReview.flatMap { ReviewGrade(rawValue: $0.gradeRaw) },
+            now: now
+        )
 
         return .card(
             StudyPrompt(
@@ -162,7 +174,8 @@ struct ContentView: View {
                 servingCount: servingCount,
                 servingNewCount: servingNewCount,
                 servingReviewCount: servingReviewCount,
-                newCount: newCount
+                newCount: newCount,
+                explanation: explanation
             )
         )
     }
@@ -185,7 +198,7 @@ struct ContentView: View {
             endServingPass()
         } else if isServingPassActive, servingCount <= 0 {
             endServingPass()
-            activeCardKey = nil
+            activeCardID = nil
             activeChoiceSeed = UUID().uuidString
             selectedChoice = nil
             isAnswerRevealed = false
@@ -210,9 +223,7 @@ struct ContentView: View {
             recentNoteSourceIDs: Array(recentNoteSourceIDs.suffix(2))
         )
 
-        activeCardKey = selectedCandidate.flatMap { candidate in
-            cards.first { $0.id == candidate.id }?.cardKey
-        }
+        activeCardID = selectedCandidate?.id
         activeChoiceSeed = selectedCandidate.map { candidate in
             "\(candidate.id.uuidString)#\(now.timeIntervalSinceReferenceDate)#\(reviews.count)"
         } ?? UUID().uuidString
@@ -315,7 +326,7 @@ struct ContentView: View {
             responseSeconds: elapsed,
             advanceImmediately: false
         )
-        scheduleMultipleChoiceAdvance(cardKey: activeCard.cardKey, selectedAnswer: answer, wasCorrect: correct)
+        scheduleMultipleChoiceAdvance(cardID: activeCard.id, selectedAnswer: answer, wasCorrect: correct)
     }
 
     private func gradeRecall(remembered: Bool, confident: Bool) {
@@ -372,10 +383,10 @@ struct ContentView: View {
         }
     }
 
-    private func scheduleMultipleChoiceAdvance(cardKey: String, selectedAnswer: String, wasCorrect: Bool) {
+    private func scheduleMultipleChoiceAdvance(cardID: UUID, selectedAnswer: String, wasCorrect: Bool) {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(wasCorrect ? 0.55 : 0.8))
-            guard activeCardKey == cardKey, selectedChoice == selectedAnswer else { return }
+            guard activeCardID == cardID, selectedChoice == selectedAnswer else { return }
             moveToNextCard()
         }
     }
@@ -451,6 +462,7 @@ private struct StudyPrompt {
     var servingNewCount: Int
     var servingReviewCount: Int
     var newCount: Int
+    var explanation: CardSelectionExplanation
 }
 
 private struct StudyView: View {
@@ -499,7 +511,8 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
-                newCount: prompt.newCount
+                newCount: prompt.newCount,
+                explanation: prompt.explanation
             )
 
             Spacer(minLength: 8)
@@ -549,11 +562,29 @@ private struct StudyStatusBar: View {
     var servingNewCount: Int
     var servingReviewCount: Int
     var newCount: Int
+    var explanation: CardSelectionExplanation
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
-            Spacer()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
+                Spacer()
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    Text(explanation.title)
+                        .fontWeight(.semibold)
+                    Text("·")
+                    Text(explanation.detail)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(explanation.title)
+                        .fontWeight(.semibold)
+                    Text(explanation.detail)
+                }
+            }
         }
         .font(.callout)
         .foregroundStyle(.secondary)

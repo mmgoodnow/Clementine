@@ -15,6 +15,51 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(ReviewGradeMapper.recall(remembered: true, confident: true), .good)
     }
 
+    func testCardSelectionExplanationNamesNewCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let explanation = CardSelectionExplainer.explanation(
+            isNew: true,
+            dueAt: now,
+            duplicateCount: 1,
+            lastGrade: nil,
+            now: now
+        )
+
+        XCTAssertEqual(explanation.title, "New card")
+        XCTAssertTrue(explanation.detail.contains("new-card allowance"))
+    }
+
+    func testCardSelectionExplanationNamesAgainReviews() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let explanation = CardSelectionExplainer.explanation(
+            isNew: false,
+            dueAt: now,
+            duplicateCount: 1,
+            lastGrade: .again,
+            now: now
+        )
+
+        XCTAssertEqual(explanation.title, "Again")
+        XCTAssertTrue(explanation.detail.contains("missed"))
+    }
+
+    func testCardSelectionExplanationNamesDuplicateRecordsBeforeAgain() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let explanation = CardSelectionExplainer.explanation(
+            isNew: false,
+            dueAt: now,
+            duplicateCount: 2,
+            lastGrade: .again,
+            now: now
+        )
+
+        XCTAssertEqual(explanation.title, "Duplicate record")
+        XCTAssertTrue(explanation.detail.contains("2"))
+    }
+
     func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
         let choices = MultipleChoiceBuilder.choices(
             correctAnswer: "zhōng guó",
