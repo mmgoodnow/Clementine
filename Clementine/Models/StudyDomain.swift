@@ -101,6 +101,11 @@ enum ReviewInteraction: String, Codable {
     case recall
 }
 
+enum StudyInteractionMode: Equatable {
+    case multipleChoice
+    case reveal
+}
+
 struct ReviewOutcome: Equatable {
     var grade: ReviewGrade
     var wasCorrect: Bool
@@ -119,6 +124,14 @@ enum ReviewGradeMapper {
     static func recall(remembered: Bool, confident: Bool) -> ReviewGrade {
         guard remembered else { return .again }
         return confident ? .good : .hard
+    }
+}
+
+enum StudyInteractionPolicy {
+    static func mode(kind: CardKind, isNew: Bool, lastGrade: ReviewGrade?) -> StudyInteractionMode {
+        if kind == .recall { return .reveal }
+        if lastGrade == .again { return .reveal }
+        return isNew ? .multipleChoice : .reveal
     }
 }
 

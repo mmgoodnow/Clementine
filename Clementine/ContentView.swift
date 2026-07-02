@@ -38,7 +38,7 @@ struct ContentView: View {
                     seedError: seedError,
                     speak: speak,
                     chooseAnswer: chooseAnswer,
-                    gradeRecall: gradeRecall,
+                    gradeReveal: gradeReveal,
                     continueSession: continuePastNaturalStop
                 )
             }
@@ -157,12 +157,18 @@ struct ContentView: View {
             !$0.isSuspended && $0.cardKey == activeCard.cardKey
         }.count
         let lastReview = reviews.first { $0.cardKey == activeCard.cardKey }
+        let lastGrade = lastReview.flatMap { ReviewGrade(rawValue: $0.gradeRaw) }
         let explanation = CardSelectionExplainer.explanation(
             isNew: activeCard.fsrsCardData == nil,
             dueAt: activeCard.dueAt,
             duplicateCount: duplicateCount,
-            lastGrade: lastReview.flatMap { ReviewGrade(rawValue: $0.gradeRaw) },
+            lastGrade: lastGrade,
             now: now
+        )
+        let interactionMode = StudyInteractionPolicy.mode(
+            kind: activeCard.kind,
+            isNew: activeCard.fsrsCardData == nil,
+            lastGrade: lastGrade
         )
 
         return .card(
@@ -171,6 +177,7 @@ struct ContentView: View {
                 card: activeCard,
                 correctAnswer: correctAnswer(for: activeCard, note: activeNote),
                 choices: choices(for: activeCard, note: activeNote),
+                interactionMode: interactionMode,
                 servingCount: servingCounters.total,
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
@@ -302,7 +309,8 @@ struct ContentView: View {
 
     private func choices(for card: StudyCard, note: VocabularyNote) -> [String] {
         let correct = correctAnswer(for: card, note: note)
-        let pool = notes
+        let sourceNotes = multipleChoiceDistractorNotes(for: card)
+        let pool = sourceNotes
             .map { card.kind == .hanziToPinyin ? $0.pinyin : $0.english }
             .filter { $0 != correct }
         let preferredSyllableCount = card.kind == .hanziToPinyin
@@ -315,6 +323,18 @@ struct ContentView: View {
             seed: "\(card.cardKey)#\(activeChoiceSeed)",
             preferredSyllableCount: preferredSyllableCount
         )
+    }
+
+    private func multipleChoiceDistractorNotes(for card: StudyCard) -> [VocabularyNote] {
+        let reviewedNoteSourceIDs = Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty })
+        let unseenNotes = notes.filter {
+            $0.sourceID != card.noteSourceID && !reviewedNoteSourceIDs.contains($0.sourceID)
+        }
+        if unseenNotes.count >= 3 {
+            return unseenNotes
+        }
+
+        return notes.filter { $0.sourceID != card.noteSourceID }
     }
 
     private func correctAnswer(for card: StudyCard, note: VocabularyNote) -> String {
@@ -339,11 +359,17 @@ struct ContentView: View {
         scheduleMultipleChoiceAdvance(cardID: activeCard.id, selectedAnswer: answer, wasCorrect: correct)
     }
 
-    private func gradeRecall(remembered: Bool, confident: Bool) {
+    private func gradeReveal(_ grade: ReviewGrade) {
         guard let activeCard, let activeNote else { return }
         let elapsed = Date().timeIntervalSince(responseStartedAt)
-        let grade = ReviewGradeMapper.recall(remembered: remembered, confident: confident)
-        applyReview(card: activeCard, note: activeNote, grade: grade, wasCorrect: remembered, interaction: .recall, responseSeconds: elapsed)
+        applyReview(
+            card: activeCard,
+            note: activeNote,
+            grade: grade,
+            wasCorrect: grade != .again,
+            interaction: .recall,
+            responseSeconds: elapsed
+        )
     }
 
     private func applyReview(
@@ -468,6 +494,7 @@ private struct StudyPrompt {
     var card: StudyCard
     var correctAnswer: String
     var choices: [String]
+    var interactionMode: StudyInteractionMode
     var servingCount: Int
     var servingNewCount: Int
     var servingReviewCount: Int
@@ -484,7 +511,7 @@ private struct StudyView: View {
     var seedError: Error?
     var speak: (VocabularyNote) -> Void
     var chooseAnswer: (String) -> Void
-    var gradeRecall: (Bool, Bool) -> Void
+    var gradeReveal: (ReviewGrade) -> Void
     var continueSession: () -> Void
 
     var body: some View {
@@ -501,7 +528,7 @@ private struct StudyView: View {
                     isAnswerRevealed: $isAnswerRevealed,
                     speak: speak,
                     chooseAnswer: chooseAnswer,
-                    gradeRecall: gradeRecall
+                    gradeReveal: gradeReveal
                 )
             }
         }
@@ -515,7 +542,7 @@ private struct StudyCardView: View {
     @Binding var isAnswerRevealed: Bool
     var speak: (VocabularyNote) -> Void
     var chooseAnswer: (String) -> Void
-    var gradeRecall: (Bool, Bool) -> Void
+    var gradeReveal: (ReviewGrade) -> Void
 
     var body: some View {
         VStack(spacing: 22) {
@@ -549,12 +576,12 @@ private struct StudyCardView: View {
                 .accessibilityLabel("Play Mandarin audio")
             }
 
-            if prompt.card.kind == .recall {
-                RecallControls(
-                    note: prompt.note,
+            if prompt.interactionMode == .reveal {
+                RevealControls(
+                    prompt: prompt,
                     isAnswerRevealed: $isAnswerRevealed,
                     speak: speak,
-                    gradeRecall: gradeRecall
+                    gradeReveal: gradeReveal
                 )
             } else {
                 MultipleChoiceControls(
@@ -706,31 +733,33 @@ private struct MultipleChoiceButtonLabel: View {
     }
 }
 
-private struct RecallControls: View {
-    var note: VocabularyNote
+private struct RevealControls: View {
+    var prompt: StudyPrompt
     @Binding var isAnswerRevealed: Bool
     var speak: (VocabularyNote) -> Void
-    var gradeRecall: (Bool, Bool) -> Void
+    var gradeReveal: (ReviewGrade) -> Void
 
     var body: some View {
         VStack(spacing: 16) {
             if isAnswerRevealed {
                 VStack(spacing: 6) {
-                    Text(note.pinyin)
+                    Text(primaryAnswer)
                         .font(.title2.weight(.semibold))
-                    Text(note.english)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+                    if let secondaryAnswer {
+                        Text(secondaryAnswer)
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 10) {
                         RecallGradeButton(
-                            title: "Missed",
+                            title: "Again",
                             systemImage: "xmark",
                             prominence: .secondary
                         ) {
-                            gradeRecall(false, false)
+                            gradeReveal(.again)
                         }
 
                         RecallGradeButton(
@@ -738,25 +767,33 @@ private struct RecallControls: View {
                             systemImage: "exclamationmark",
                             prominence: .secondary
                         ) {
-                            gradeRecall(true, false)
+                            gradeReveal(.hard)
                         }
 
                         RecallGradeButton(
-                            title: "Got it",
+                            title: "Good",
                             systemImage: "checkmark",
                             prominence: .primary
                         ) {
-                            gradeRecall(true, true)
+                            gradeReveal(.good)
+                        }
+
+                        RecallGradeButton(
+                            title: "Easy",
+                            systemImage: "sparkles",
+                            prominence: .secondary
+                        ) {
+                            gradeReveal(.easy)
                         }
                     }
 
                     VStack(spacing: 10) {
                         RecallGradeButton(
-                            title: "Missed",
+                            title: "Again",
                             systemImage: "xmark",
                             prominence: .secondary
                         ) {
-                            gradeRecall(false, false)
+                            gradeReveal(.again)
                         }
 
                         RecallGradeButton(
@@ -764,27 +801,35 @@ private struct RecallControls: View {
                             systemImage: "exclamationmark",
                             prominence: .secondary
                         ) {
-                            gradeRecall(true, false)
+                            gradeReveal(.hard)
                         }
 
                         RecallGradeButton(
-                            title: "Got it",
+                            title: "Good",
                             systemImage: "checkmark",
                             prominence: .primary
                         ) {
-                            gradeRecall(true, true)
+                            gradeReveal(.good)
+                        }
+
+                        RecallGradeButton(
+                            title: "Easy",
+                            systemImage: "sparkles",
+                            prominence: .secondary
+                        ) {
+                            gradeReveal(.easy)
                         }
                     }
                 }
                 .controlSize(.large)
             } else {
-                Text("Recall the pinyin and meaning")
+                Text(recallPrompt)
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
                 Button {
                     isAnswerRevealed = true
-                    speak(note)
+                    speak(prompt.note)
                 } label: {
                     Label("Reveal", systemImage: "eye")
                         .frame(maxWidth: 260)
@@ -792,6 +837,39 @@ private struct RecallControls: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
             }
+        }
+    }
+
+    private var recallPrompt: String {
+        switch prompt.card.kind {
+        case .hanziToMeaning:
+            "Recall the meaning"
+        case .hanziToPinyin:
+            "Recall the pinyin"
+        case .recall:
+            "Recall the pinyin and meaning"
+        }
+    }
+
+    private var primaryAnswer: String {
+        switch prompt.card.kind {
+        case .hanziToMeaning:
+            prompt.note.english
+        case .hanziToPinyin:
+            prompt.note.pinyin
+        case .recall:
+            prompt.note.pinyin
+        }
+    }
+
+    private var secondaryAnswer: String? {
+        switch prompt.card.kind {
+        case .hanziToMeaning:
+            prompt.note.pinyin
+        case .hanziToPinyin:
+            prompt.note.english
+        case .recall:
+            prompt.note.english
         }
     }
 }
@@ -825,7 +903,7 @@ private struct RecallGradeButton: View {
                 .font(.headline)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
-                .frame(minWidth: 104, maxWidth: .infinity, minHeight: 44)
+                .frame(minWidth: 82, maxWidth: .infinity, minHeight: 44)
                 .padding(.horizontal, 6)
                 .contentShape(.rect)
         }

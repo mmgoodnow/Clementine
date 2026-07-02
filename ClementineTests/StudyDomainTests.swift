@@ -15,6 +15,32 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(ReviewGradeMapper.recall(remembered: true, confident: true), .good)
     }
 
+    func testStudyInteractionPolicyUsesMultipleChoiceForFreshRecognitionCards() {
+        XCTAssertEqual(
+            StudyInteractionPolicy.mode(kind: .hanziToMeaning, isNew: true, lastGrade: nil),
+            .multipleChoice
+        )
+        XCTAssertEqual(
+            StudyInteractionPolicy.mode(kind: .hanziToPinyin, isNew: true, lastGrade: nil),
+            .multipleChoice
+        )
+    }
+
+    func testStudyInteractionPolicyUsesRevealForReviewsAndAgains() {
+        XCTAssertEqual(
+            StudyInteractionPolicy.mode(kind: .hanziToMeaning, isNew: false, lastGrade: .good),
+            .reveal
+        )
+        XCTAssertEqual(
+            StudyInteractionPolicy.mode(kind: .hanziToPinyin, isNew: true, lastGrade: .again),
+            .reveal
+        )
+        XCTAssertEqual(
+            StudyInteractionPolicy.mode(kind: .recall, isNew: true, lastGrade: nil),
+            .reveal
+        )
+    }
+
     func testCardSelectionExplanationNamesNewCards() {
         let now = Date(timeIntervalSince1970: 1_000)
 
