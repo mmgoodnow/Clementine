@@ -243,6 +243,46 @@ struct CardSelectionExplanation: Equatable {
     var detail: String
 }
 
+struct ServingCounters: Equatable {
+    var total: Int
+    var new: Int
+    var review: Int
+
+    init(total: Int = 0, new: Int = 0, review: Int = 0) {
+        self.total = total
+        self.new = new
+        self.review = review
+    }
+
+    init(cards: [SessionCardCandidate]) {
+        let newCount = cards.filter(\.isNew).count
+        self.init(
+            total: cards.count,
+            new: newCount,
+            review: cards.count - newCount
+        )
+    }
+
+    mutating func consumeReview(
+        wasNew: Bool,
+        grade: ReviewGrade,
+        scheduledDueAt: Date,
+        now: Date
+    ) {
+        total = max(0, total - 1)
+        if wasNew {
+            new = max(0, new - 1)
+        } else {
+            review = max(0, review - 1)
+        }
+
+        if grade == .again, scheduledDueAt <= now {
+            total += 1
+            review += 1
+        }
+    }
+}
+
 enum CardSelectionExplainer {
     static func explanation(
         isNew: Bool,

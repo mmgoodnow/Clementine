@@ -60,6 +60,48 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertTrue(explanation.detail.contains("2"))
     }
 
+    func testServingCountersConsumeCorrectReview() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        var counters = ServingCounters(total: 54, new: 30, review: 24)
+
+        counters.consumeReview(
+            wasNew: false,
+            grade: .good,
+            scheduledDueAt: now.addingTimeInterval(60 * 60 * 24),
+            now: now
+        )
+
+        XCTAssertEqual(counters, ServingCounters(total: 53, new: 30, review: 23))
+    }
+
+    func testServingCountersKeepAgainReviewInCurrentServingPlan() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        var counters = ServingCounters(total: 54, new: 30, review: 24)
+
+        counters.consumeReview(
+            wasNew: false,
+            grade: .again,
+            scheduledDueAt: now,
+            now: now
+        )
+
+        XCTAssertEqual(counters, ServingCounters(total: 54, new: 30, review: 24))
+    }
+
+    func testServingCountersMoveAgainNewCardIntoReviews() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        var counters = ServingCounters(total: 54, new: 30, review: 24)
+
+        counters.consumeReview(
+            wasNew: true,
+            grade: .again,
+            scheduledDueAt: now,
+            now: now
+        )
+
+        XCTAssertEqual(counters, ServingCounters(total: 54, new: 29, review: 25))
+    }
+
     func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
         let choices = MultipleChoiceBuilder.choices(
             correctAnswer: "zhōng guó",

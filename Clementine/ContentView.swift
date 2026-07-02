@@ -23,9 +23,7 @@ struct ContentView: View {
     @State private var hasWarmedSpeechSynthesizer = false
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
-    @State private var servingCount = 0
-    @State private var servingNewCount = 0
-    @State private var servingReviewCount = 0
+    @State private var servingCounters = ServingCounters()
     @State private var isServingPassActive = false
 
     var body: some View {
@@ -171,9 +169,9 @@ struct ContentView: View {
                 card: activeCard,
                 correctAnswer: correctAnswer(for: activeCard, note: activeNote),
                 choices: choices(for: activeCard, note: activeNote),
-                servingCount: servingCount,
-                servingNewCount: servingNewCount,
-                servingReviewCount: servingReviewCount,
+                servingCount: servingCounters.total,
+                servingNewCount: servingCounters.new,
+                servingReviewCount: servingCounters.review,
                 newCount: newCount,
                 explanation: explanation
             )
@@ -196,7 +194,7 @@ struct ContentView: View {
     private func moveToNextCard(forceNewCards: Bool = false) {
         if forceNewCards {
             endServingPass()
-        } else if isServingPassActive, servingCount <= 0 {
+        } else if isServingPassActive, servingCounters.total <= 0 {
             endServingPass()
             activeCardID = nil
             activeChoiceSeed = UUID().uuidString
@@ -251,16 +249,12 @@ struct ContentView: View {
     }
 
     private func endServingPass() {
-        servingCount = 0
-        servingNewCount = 0
-        servingReviewCount = 0
+        servingCounters = ServingCounters()
         isServingPassActive = false
     }
 
     private func startServingPass(with cards: [SessionCardCandidate]) {
-        servingCount = cards.count
-        servingNewCount = cards.filter(\.isNew).count
-        servingReviewCount = cards.count - servingNewCount
+        servingCounters = ServingCounters(cards: cards)
         isServingPassActive = true
     }
 
@@ -369,12 +363,12 @@ struct ContentView: View {
                 )
             )
             try modelContext.save()
-            servingCount = max(0, servingCount - 1)
-            if wasServingNewCard {
-                servingNewCount = max(0, servingNewCount - 1)
-            } else {
-                servingReviewCount = max(0, servingReviewCount - 1)
-            }
+            servingCounters.consumeReview(
+                wasNew: wasServingNewCard,
+                grade: grade,
+                scheduledDueAt: review.dueAt,
+                now: now
+            )
             if advanceImmediately {
                 moveToNextCard()
             }
