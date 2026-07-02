@@ -220,6 +220,16 @@ struct SessionDecision: Equatable {
     var shouldStopNaturally: Bool
 }
 
+struct ReviewHistoryEvent: Equatable {
+    var cardKey: String
+    var noteSourceID: String
+    var reviewedAt: Date
+
+    var learningKey: String {
+        noteSourceID.isEmpty ? cardKey : noteSourceID
+    }
+}
+
 struct NewCardIntakeForecast: Equatable {
     enum LimitingFactor: String, Equatable {
         case reviewBudget = "Review budget"
@@ -237,6 +247,7 @@ struct NewCardIntakeForecast: Equatable {
     var recentAccuracy: Double
     var desiredRetention: Double
     var expectedReviewLoadPerNewCard: Double
+    var historicalReviewLoadPerNewCard: Double?
     var workloadAllowance: Int
     var passLimit: Int
     var dayLimit: Int
@@ -406,6 +417,7 @@ enum AdaptiveSessionPolicy {
         pace: LearningPace,
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
+        historicalReviewLoadPerNewCard: Double? = nil,
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
@@ -414,6 +426,7 @@ enum AdaptiveSessionPolicy {
             pace: pace,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
+            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
             now: now,
             forceNewCards: forceNewCards
         )
@@ -488,11 +501,56 @@ enum AdaptiveSessionPolicy {
         }
     }
 
+    static func historicalReviewLoadPerNewCard(
+        from reviews: [ReviewHistoryEvent],
+        now: Date,
+        horizonDays: Int = forecastHorizonDays
+    ) -> Double? {
+        let grouped = Dictionary(grouping: reviews.filter { !$0.learningKey.isEmpty }, by: \.learningKey)
+        let horizonSeconds = Double(horizonDays) * 24 * 60 * 60
+        let recentIntroductions = grouped.values
+            .compactMap { events -> (introducedAt: Date, projectedLoad: Double)? in
+                let ordered = events.sorted { $0.reviewedAt < $1.reviewedAt }
+                guard let first = ordered.first else { return nil }
+
+                let ageSeconds = max(0, now.timeIntervalSince(first.reviewedAt))
+                guard ageSeconds > 0 else { return nil }
+
+                let horizonEnd = first.reviewedAt.addingTimeInterval(horizonSeconds)
+                let observedEvents = ordered.filter { $0.reviewedAt <= min(now, horizonEnd) }
+                guard !observedEvents.isEmpty else { return nil }
+
+                let observedDays = min(Double(horizonDays), max(ageSeconds / (24 * 60 * 60), 0.25))
+                let observedCount = Double(observedEvents.count)
+                let projectedLoad: Double
+                if observedCount == 1, observedDays < 1 {
+                    projectedLoad = observedCount
+                } else {
+                    projectedLoad = min(60, observedCount * Double(horizonDays) / observedDays)
+                }
+
+                return (first.reviewedAt, projectedLoad)
+            }
+            .sorted { $0.introducedAt > $1.introducedAt }
+            .prefix(60)
+            .map { $0.projectedLoad }
+
+        guard !recentIntroductions.isEmpty else { return nil }
+
+        let sampleCount = Double(recentIntroductions.count)
+        let average = recentIntroductions.reduce(0, +) / sampleCount
+        let confidence = min(1, sampleCount / 12)
+        let neutralPrior = 8.0
+
+        return neutralPrior * (1 - confidence) + average * confidence
+    }
+
     static func newCardIntakeForecast(
         from candidates: [SessionCardCandidate],
         pace: LearningPace,
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
+        historicalReviewLoadPerNewCard: Double? = nil,
         now: Date,
         forceNewCards: Bool = false
     ) -> NewCardIntakeForecast {
@@ -507,9 +565,13 @@ enum AdaptiveSessionPolicy {
             recentAccuracy: recentAccuracy
         )
         let normalizedAccuracy = min(max(recentAccuracy, 0.35), 0.98)
-        let expectedReviewLoad = expectedReviewLoadPerNewCard(
+        let theoreticalReviewLoad = expectedReviewLoadPerNewCard(
             desiredRetention: desiredRetention,
             recentAccuracy: normalizedAccuracy
+        )
+        let expectedReviewLoad = max(
+            theoreticalReviewLoad,
+            historicalReviewLoadPerNewCard.map(ceil) ?? theoreticalReviewLoad
         )
         let workloadAllowance = availableLoad > 0
             ? Int(floor(Double(availableLoad) / expectedReviewLoad))
@@ -534,6 +596,7 @@ enum AdaptiveSessionPolicy {
             recentAccuracy: recentAccuracy,
             desiredRetention: desiredRetention,
             expectedReviewLoadPerNewCard: expectedReviewLoad,
+            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
             workloadAllowance: workloadAllowance,
             passLimit: passLimit,
             dayLimit: pace.newCardsPerDayLimit,

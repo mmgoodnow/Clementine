@@ -121,6 +121,23 @@ struct ContentView: View {
         return count
     }
 
+    private var historicalReviewLoadPerNewCard: Double? {
+        AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
+            from: reviewHistoryEvents,
+            now: Date()
+        )
+    }
+
+    private var reviewHistoryEvents: [ReviewHistoryEvent] {
+        reviews.map {
+            ReviewHistoryEvent(
+                cardKey: $0.cardKey,
+                noteSourceID: $0.noteSourceID,
+                reviewedAt: $0.reviewedAt
+            )
+        }
+    }
+
     private func currentDesiredRetention(now: Date) -> Double {
         AdaptiveSessionPolicy.desiredRetention(
             pace: settings?.learningPace ?? .balanced,
@@ -228,6 +245,7 @@ struct ContentView: View {
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
+            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
             now: now,
             forceNewCards: forceNewCards
         )
@@ -982,7 +1000,7 @@ private struct ProgressViewContent: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 14) {
                         ProgressMetric(
-                            title: "Next New",
+                            title: "New Vocab",
                             value: "\(intakeForecast.newCardsToServe)",
                             systemImage: "plus.rectangle.on.rectangle"
                         )
@@ -1008,9 +1026,15 @@ private struct ProgressViewContent: View {
                             value: "\(intakeForecast.availableReviewBudget)"
                         )
                         ForecastRow(
-                            title: "Per-new-card cost",
+                            title: "Per-new-vocab cost",
                             value: intakeForecast.expectedReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
                         )
+                        if let historicalReviewLoadPerNewCard = intakeForecast.historicalReviewLoadPerNewCard {
+                            ForecastRow(
+                                title: "History estimate",
+                                value: historicalReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
+                            )
+                        }
                         ForecastRow(
                             title: "Accuracy",
                             value: intakeForecast.recentAccuracy.formatted(.percent.precision(.fractionLength(0)))
@@ -1143,6 +1167,7 @@ private struct ProgressViewContent: View {
             pace: learningPace,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
+            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
             now: Date()
         )
     }
@@ -1185,6 +1210,23 @@ private struct ProgressViewContent: View {
         }
 
         return count
+    }
+
+    private var historicalReviewLoadPerNewCard: Double? {
+        AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
+            from: reviewHistoryEvents,
+            now: Date()
+        )
+    }
+
+    private var reviewHistoryEvents: [ReviewHistoryEvent] {
+        reviews.map {
+            ReviewHistoryEvent(
+                cardKey: $0.cardKey,
+                noteSourceID: $0.noteSourceID,
+                reviewedAt: $0.reviewedAt
+            )
+        }
     }
 
     private var introducedVocabularyPoints: [VocabularyPoint] {

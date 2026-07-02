@@ -732,6 +732,62 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(forecast.newCardsToServe, forecast.passLimit)
     }
 
+    func testHistoryEstimatedNewCardCostReducesReviewBudgetAllowance() {
+        let now = Date(timeIntervalSince1970: 8 * 24 * 60 * 60)
+        let newCards = (0..<700).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+        let history = (0..<12).flatMap { wordIndex in
+            (0..<5).map { reviewIndex in
+                ReviewHistoryEvent(
+                    cardKey: "word-\(wordIndex)",
+                    noteSourceID: "word-\(wordIndex)",
+                    reviewedAt: now.addingTimeInterval(-24 * 60 * 60 + Double(reviewIndex * 60 * 60))
+                )
+            }
+        }
+        let historicalCost = AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
+            from: history,
+            now: now
+        )
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: newCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            historicalReviewLoadPerNewCard: historicalCost,
+            now: now
+        )
+
+        XCTAssertEqual(historicalCost, 35)
+        XCTAssertEqual(forecast.expectedReviewLoadPerNewCard, 35)
+        XCTAssertEqual(forecast.newCardsToServe, 12)
+        XCTAssertEqual(forecast.limitingFactor, .reviewBudget)
+    }
+
+    func testSingleFreshExposureDoesNotExplodeHistoricalNewCardCost() {
+        let now = Date(timeIntervalSince1970: 8 * 24 * 60 * 60)
+        let history = (0..<12).map { wordIndex in
+            ReviewHistoryEvent(
+                cardKey: "word-\(wordIndex)",
+                noteSourceID: "word-\(wordIndex)",
+                reviewedAt: now.addingTimeInterval(-60 * 60)
+            )
+        }
+
+        let historicalCost = AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
+            from: history,
+            now: now
+        )
+
+        XCTAssertEqual(historicalCost, 1)
+    }
+
     func testNewCardIntakeForecastExplainsDailyLimit() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = (0..<700).map { index in
