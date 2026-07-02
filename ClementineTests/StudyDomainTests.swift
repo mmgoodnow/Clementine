@@ -88,47 +88,100 @@ final class StudyDomainTests: XCTestCase {
 
     func testServingCountersConsumeCorrectReview() {
         let now = Date(timeIntervalSince1970: 1_000)
-        var counters = ServingCounters(total: 54, new: 30, review: 24)
+        let reviewID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        var counters = ServingCounters(cards: [
+            candidate(id: reviewID, noteSourceID: "hsk2-0001", isNew: false),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!, noteSourceID: "hsk2-0002", isNew: true),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!, noteSourceID: "hsk2-0003", isNew: true),
+        ])
 
         counters.consumeReview(
+            cardID: reviewID,
+            noteSourceID: "hsk2-0001",
             wasNew: false,
             grade: .good,
             scheduledDueAt: now.addingTimeInterval(60 * 60 * 24),
             now: now
         )
 
-        XCTAssertEqual(counters, ServingCounters(total: 53, new: 30, review: 23, plannedTotal: 54))
-        XCTAssertEqual(counters.plannedTotal, 54)
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 2)
+        XCTAssertEqual(counters.review, 0)
+        XCTAssertEqual(counters.plannedTotal, 3)
     }
 
     func testServingCountersKeepAgainReviewInCurrentServingPlan() {
         let now = Date(timeIntervalSince1970: 1_000)
-        var counters = ServingCounters(total: 54, new: 30, review: 24)
+        let reviewID = UUID(uuidString: "00000000-0000-0000-0000-000000000004")!
+        var counters = ServingCounters(cards: [
+            candidate(id: reviewID, noteSourceID: "hsk2-0001", isNew: false),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000005")!, noteSourceID: "hsk2-0002", isNew: true),
+        ])
 
         counters.consumeReview(
+            cardID: reviewID,
+            noteSourceID: "hsk2-0001",
             wasNew: false,
             grade: .again,
             scheduledDueAt: now,
             now: now
         )
 
-        XCTAssertEqual(counters, ServingCounters(total: 54, new: 30, review: 24))
-        XCTAssertEqual(counters.plannedTotal, 54)
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.review, 1)
+        XCTAssertEqual(counters.plannedTotal, 2)
     }
 
     func testServingCountersMoveAgainNewCardIntoReviews() {
         let now = Date(timeIntervalSince1970: 1_000)
-        var counters = ServingCounters(total: 54, new: 30, review: 24)
+        let newID = UUID(uuidString: "00000000-0000-0000-0000-000000000006")!
+        var counters = ServingCounters(cards: [
+            candidate(id: newID, noteSourceID: "hsk2-0001", isNew: true),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000007")!, noteSourceID: "hsk2-0002", isNew: true),
+        ])
 
         counters.consumeReview(
+            cardID: newID,
+            noteSourceID: "hsk2-0001",
             wasNew: true,
             grade: .again,
             scheduledDueAt: now,
             now: now
         )
 
-        XCTAssertEqual(counters, ServingCounters(total: 54, new: 29, review: 25))
-        XCTAssertEqual(counters.plannedTotal, 54)
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.review, 1)
+        XCTAssertEqual(counters.plannedTotal, 2)
+    }
+
+    func testServingCountersRollGeneratedCardsUpToVocabularyEntries() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let meaningID = UUID(uuidString: "00000000-0000-0000-0000-000000000008")!
+        let pinyinID = UUID(uuidString: "00000000-0000-0000-0000-000000000009")!
+        var counters = ServingCounters(cards: [
+            candidate(id: meaningID, noteSourceID: "hsk2-0001", isNew: true),
+            candidate(id: pinyinID, noteSourceID: "hsk2-0001", isNew: true),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!, noteSourceID: "hsk2-0002", isNew: false),
+        ])
+
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.review, 1)
+
+        counters.consumeReview(
+            cardID: meaningID,
+            noteSourceID: "hsk2-0001",
+            wasNew: true,
+            grade: .good,
+            scheduledDueAt: now.addingTimeInterval(60 * 60 * 24),
+            now: now
+        )
+
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.review, 1)
     }
 
     func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
@@ -437,7 +490,7 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(lowAccuracy, highAccuracy)
     }
 
-    func testNewCardsAreBraidedAcrossVocabularyAndRecognitionTypes() {
+    func testNewCardsPreferVocabularyVarietyWhenLegacyVariantsExist() {
         let now = Date(timeIntervalSince1970: 1_000)
         let newCards = ["word-1", "word-2", "word-3"].flatMap { noteSourceID in
             [
@@ -799,5 +852,20 @@ final class StudyDomainTests: XCTestCase {
         )
 
         XCTAssertEqual(decision.orderedCards.first, newCard)
+    }
+
+    private func candidate(
+        id: UUID,
+        noteSourceID: String,
+        isNew: Bool,
+        dueAt: Date = Date(timeIntervalSince1970: 1_000)
+    ) -> SessionCardCandidate {
+        SessionCardCandidate(
+            id: id,
+            dueAt: dueAt,
+            isNew: isNew,
+            recentLapses: 0,
+            noteSourceID: noteSourceID
+        )
     }
 }

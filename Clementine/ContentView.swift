@@ -151,7 +151,13 @@ struct ContentView: View {
             return .complete
         }
 
-        let newCount = cards.filter { !$0.isSuspended && $0.fsrsCardData == nil }.count
+        let introducedNoteSourceIDs = Set(
+            cards
+                .filter { !$0.isSuspended && $0.fsrsCardData != nil }
+                .map(\.noteSourceID)
+                .filter { !$0.isEmpty }
+        )
+        let unseenVocabularyCount = notes.filter { !introducedNoteSourceIDs.contains($0.sourceID) }.count
         let now = Date()
         let duplicateCount = cards.filter {
             !$0.isSuspended && $0.cardKey == activeCard.cardKey
@@ -183,7 +189,7 @@ struct ContentView: View {
                 servingReviewCount: servingCounters.review,
                 plannedServingCount: servingCounters.plannedTotal,
                 hasLivePlanChanged: hasLivePlanChanged,
-                newCount: newCount,
+                unseenVocabularyCount: unseenVocabularyCount,
                 explanation: explanation
             )
         )
@@ -264,6 +270,7 @@ struct ContentView: View {
         if isServingPassActive, !servingPlannedCardIDs.contains(candidate.id) {
             hasLivePlanChanged = true
             servingPlannedCardIDs.insert(candidate.id)
+            servingCounters.includeLiveChange(candidate)
         }
     }
 
@@ -406,6 +413,8 @@ struct ContentView: View {
             )
             try modelContext.save()
             servingCounters.consumeReview(
+                cardID: card.id,
+                noteSourceID: note.sourceID,
                 wasNew: wasServingNewCard,
                 grade: grade,
                 scheduledDueAt: review.dueAt,
@@ -500,7 +509,7 @@ private struct StudyPrompt {
     var servingReviewCount: Int
     var plannedServingCount: Int
     var hasLivePlanChanged: Bool
-    var newCount: Int
+    var unseenVocabularyCount: Int
     var explanation: CardSelectionExplanation
 }
 
@@ -552,7 +561,7 @@ private struct StudyCardView: View {
                 servingReviewCount: prompt.servingReviewCount,
                 plannedServingCount: prompt.plannedServingCount,
                 hasLivePlanChanged: prompt.hasLivePlanChanged,
-                newCount: prompt.newCount,
+                unseenVocabularyCount: prompt.unseenVocabularyCount,
                 explanation: prompt.explanation
             )
 
@@ -604,13 +613,13 @@ private struct StudyStatusBar: View {
     var servingReviewCount: Int
     var plannedServingCount: Int
     var hasLivePlanChanged: Bool
-    var newCount: Int
+    var unseenVocabularyCount: Int
     var explanation: CardSelectionExplanation
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Text("\(servingCount) live · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
+                Text("\(servingCount) live · \(servingNewCount) new · \(servingReviewCount) review · \(unseenVocabularyCount) unseen")
                 Spacer()
             }
 

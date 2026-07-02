@@ -29,16 +29,12 @@ final class SeedImporterTests: XCTestCase {
         let installs = try context.fetch(FetchDescriptor<SeedInstall>())
 
         XCTAssertEqual(notes.map(\.sourceID), ["test-1"])
-        XCTAssertEqual(Set(cards.map(\.cardKey)), [
-            "test-1#hanziToMeaning",
-            "test-1#hanziToPinyin",
-            "test-1#recall"
-        ])
-        XCTAssertEqual(cards.count, 3)
+        XCTAssertEqual(cards.map(\.cardKey), ["test-1#hanziToMeaning"])
+        XCTAssertEqual(cards.map(\.kind), [.hanziToMeaning])
         XCTAssertEqual(installs.map(\.deckID), ["test"])
     }
 
-    func testSeedImportOrdersNewCardsByDeckOrderAndSeparatesVariations() throws {
+    func testSeedImportCreatesOneCanonicalCardPerVocabularyInDeckOrder() throws {
         let container = try ClementineModelContainer.make(inMemory: true)
         let context = container.mainContext
         let now = Date(timeIntervalSince1970: 1_000)
@@ -59,12 +55,13 @@ final class SeedImporterTests: XCTestCase {
             return lhs.dueAt < rhs.dueAt
         }
 
-        XCTAssertEqual(cards.prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
-        XCTAssertEqual(Set(cards.prefix(3).map(\.kind)), [.hanziToMeaning])
-        XCTAssertEqual(cards.dropFirst(3).prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
-        XCTAssertEqual(Set(cards.dropFirst(3).prefix(3).map(\.kind)), [.hanziToPinyin])
-        XCTAssertEqual(cards.dropFirst(6).prefix(3).map(\.noteSourceID), ["test-1", "test-2", "test-3"])
-        XCTAssertEqual(Set(cards.dropFirst(6).prefix(3).map(\.kind)), [.recall])
+        XCTAssertEqual(cards.map(\.noteSourceID), ["test-1", "test-2", "test-3"])
+        XCTAssertEqual(cards.map(\.kind), [.hanziToMeaning, .hanziToMeaning, .hanziToMeaning])
+        XCTAssertEqual(cards.map(\.cardKey), [
+            "test-1#hanziToMeaning",
+            "test-2#hanziToMeaning",
+            "test-3#hanziToMeaning",
+        ])
     }
 
     func testDeduplicatorRemovesCloudKitMergedSeedDuplicates() throws {
@@ -117,5 +114,57 @@ final class SeedImporterTests: XCTestCase {
         XCTAssertEqual(cards.count, 1)
         XCTAssertEqual(cards.first?.cardKey, "test-1#hanziToMeaning")
         XCTAssertEqual(cards.first?.fsrsCardData, Data([1, 2, 3]))
+    }
+
+    func testDeduplicatorConsolidatesOldGeneratedCardsIntoOneVocabularyCard() throws {
+        let container = try ClementineModelContainer.make(inMemory: true)
+        let context = container.mainContext
+        let older = Date(timeIntervalSince1970: 1_000)
+        let newer = Date(timeIntervalSince1970: 2_000)
+
+        context.insert(
+            VocabularyNote(
+                sourceID: "test-1",
+                deckID: "test",
+                hanzi: "爱",
+                pinyin: "ài",
+                english: "love",
+                createdAt: older,
+                updatedAt: older
+            )
+        )
+
+        let meaningCard = StudyCard(noteSourceID: "test-1", kind: .hanziToMeaning, dueAt: older)
+        meaningCard.updatedAt = older
+        context.insert(meaningCard)
+
+        let pinyinCard = StudyCard(noteSourceID: "test-1", kind: .hanziToPinyin, dueAt: newer)
+        pinyinCard.updatedAt = newer
+        pinyinCard.fsrsCardData = Data([9, 8, 7])
+        context.insert(pinyinCard)
+
+        context.insert(
+            ReviewEvent(
+                cardKey: "test-1#hanziToPinyin",
+                noteSourceID: "test-1",
+                grade: .good,
+                interaction: .multipleChoice,
+                wasCorrect: true,
+                responseSeconds: 2
+            )
+        )
+
+        try context.save()
+
+        XCTAssertEqual(try SeedDeduplicator.removeDuplicateSeedRecords(context: context), 2)
+
+        let cards = try context.fetch(FetchDescriptor<StudyCard>())
+        let reviews = try context.fetch(FetchDescriptor<ReviewEvent>())
+
+        XCTAssertEqual(cards.count, 1)
+        XCTAssertEqual(cards.first?.cardKey, "test-1#hanziToMeaning")
+        XCTAssertEqual(cards.first?.kind, .hanziToMeaning)
+        XCTAssertEqual(cards.first?.fsrsCardData, Data([9, 8, 7]))
+        XCTAssertEqual(reviews.map(\.cardKey), ["test-1#hanziToMeaning"])
     }
 }

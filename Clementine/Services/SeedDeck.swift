@@ -95,16 +95,14 @@ enum SeedImporter {
         now: Date,
         order: Int
     ) throws {
-        for kind in [CardKind.hanziToMeaning, .hanziToPinyin, .recall] {
-            let cardKey = "\(item.sourceID)#\(kind.rawValue)"
-            let descriptor = FetchDescriptor<StudyCard>(
-                predicate: #Predicate { $0.cardKey == cardKey }
-            )
+        let cardKey = canonicalStudyCardKey(for: item.sourceID)
+        let descriptor = FetchDescriptor<StudyCard>(
+            predicate: #Predicate { $0.cardKey == cardKey }
+        )
 
-            if try context.fetch(descriptor).isEmpty {
-                let orderedDueAt = now.addingTimeInterval(Double(kind.studyOrder * 10_000 + order))
-                context.insert(StudyCard(noteSourceID: item.sourceID, kind: kind, dueAt: orderedDueAt))
-            }
+        if try context.fetch(descriptor).isEmpty {
+            let orderedDueAt = now.addingTimeInterval(Double(order))
+            context.insert(StudyCard(noteSourceID: item.sourceID, kind: .hanziToMeaning, dueAt: orderedDueAt))
         }
     }
 }
@@ -116,6 +114,7 @@ enum SeedDeduplicator {
         var removedCount = 0
         removedCount += try removeDuplicateNotes(context: context)
         removedCount += try removeDuplicateCards(context: context)
+        removedCount += try consolidateGeneratedCards(context: context)
 
         if removedCount > 0 {
             try context.save()
@@ -158,6 +157,48 @@ enum SeedDeduplicator {
         return removedCount
     }
 
+    private static func consolidateGeneratedCards(context: ModelContext) throws -> Int {
+        let cards = try context.fetch(FetchDescriptor<StudyCard>())
+        let grouped = Dictionary(grouping: cards.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+        let reviewEvents = try context.fetch(FetchDescriptor<ReviewEvent>())
+        var changedCount = 0
+
+        for (noteSourceID, cardsForNote) in grouped {
+            guard !cardsForNote.isEmpty else { continue }
+
+            let canonicalKey = canonicalStudyCardKey(for: noteSourceID)
+            let preferred = cardsForNote.sorted(by: preferredCard(_:_:)).first
+            let keeper = cardsForNote.first { $0.cardKey == canonicalKey } ?? preferred
+
+            guard let keeper else { continue }
+
+            if let preferred, preferred !== keeper, preferredCard(preferred, keeper) {
+                keeper.fsrsCardData = preferred.fsrsCardData
+                keeper.dueAt = preferred.dueAt
+                keeper.updatedAt = preferred.updatedAt
+            }
+
+            if keeper.cardKey != canonicalKey || keeper.kind != .hanziToMeaning {
+                keeper.noteSourceID = noteSourceID
+                keeper.kind = .hanziToMeaning
+                keeper.cardKey = canonicalKey
+                changedCount += 1
+            }
+
+            for duplicate in cardsForNote where duplicate !== keeper {
+                context.delete(duplicate)
+                changedCount += 1
+            }
+
+            for event in reviewEvents where event.noteSourceID == noteSourceID && event.cardKey != canonicalKey {
+                event.cardKey = canonicalKey
+                changedCount += 1
+            }
+        }
+
+        return changedCount
+    }
+
     private static func preferredCard(_ lhs: StudyCard, _ rhs: StudyCard) -> Bool {
         let lhsHasProgress = lhs.fsrsCardData != nil
         let rhsHasProgress = rhs.fsrsCardData != nil
@@ -166,4 +207,8 @@ enum SeedDeduplicator {
         if lhs.dueAt != rhs.dueAt { return lhs.dueAt < rhs.dueAt }
         return lhs.id.uuidString < rhs.id.uuidString
     }
+}
+
+private func canonicalStudyCardKey(for noteSourceID: String) -> String {
+    "\(noteSourceID)#\(CardKind.hanziToMeaning.rawValue)"
 }

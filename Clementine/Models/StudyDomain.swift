@@ -257,45 +257,97 @@ struct CardSelectionExplanation: Equatable {
 }
 
 struct ServingCounters: Equatable {
-    var total: Int
-    var new: Int
-    var review: Int
-    var plannedTotal: Int
+    private var remainingItems: [UUID: ServingCounterItem]
+    private var plannedNoteKeys: Set<String>
 
-    init(total: Int = 0, new: Int = 0, review: Int = 0, plannedTotal: Int? = nil) {
-        self.total = total
-        self.new = new
-        self.review = review
-        self.plannedTotal = plannedTotal ?? total
+    var total: Int {
+        noteStates.count
+    }
+
+    var new: Int {
+        noteStates.values.filter(\.isNewOnly).count
+    }
+
+    var review: Int {
+        noteStates.values.filter(\.hasReview).count
+    }
+
+    var plannedTotal: Int {
+        plannedNoteKeys.count
+    }
+
+    init() {
+        remainingItems = [:]
+        plannedNoteKeys = []
     }
 
     init(cards: [SessionCardCandidate]) {
-        let newCount = cards.filter(\.isNew).count
-        self.init(
-            total: cards.count,
-            new: newCount,
-            review: cards.count - newCount,
-            plannedTotal: cards.count
-        )
+        let items = cards.map(ServingCounterItem.init(candidate:))
+        remainingItems = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        plannedNoteKeys = Set(items.map(\.noteKey))
     }
 
     mutating func consumeReview(
+        cardID: UUID,
+        noteSourceID: String,
         wasNew: Bool,
         grade: ReviewGrade,
         scheduledDueAt: Date,
         now: Date
     ) {
-        total = max(0, total - 1)
-        if wasNew {
-            new = max(0, new - 1)
-        } else {
-            review = max(0, review - 1)
-        }
+        remainingItems.removeValue(forKey: cardID)
 
         if grade == .again, scheduledDueAt <= now {
-            total += 1
-            review += 1
+            remainingItems[cardID] = ServingCounterItem(
+                id: cardID,
+                noteSourceID: noteSourceID,
+                isNew: false
+            )
         }
+    }
+
+    mutating func includeLiveChange(_ candidate: SessionCardCandidate) {
+        let item = ServingCounterItem(candidate: candidate)
+        remainingItems[candidate.id] = item
+        plannedNoteKeys.insert(item.noteKey)
+    }
+
+    private var noteStates: [String: ServingCounterNoteState] {
+        remainingItems.values.reduce(into: [:]) { states, item in
+            var state = states[item.noteKey, default: ServingCounterNoteState()]
+            state.hasNew = state.hasNew || item.isNew
+            state.hasReview = state.hasReview || !item.isNew
+            states[item.noteKey] = state
+        }
+    }
+}
+
+private struct ServingCounterItem: Equatable {
+    var id: UUID
+    var noteSourceID: String
+    var isNew: Bool
+
+    init(id: UUID, noteSourceID: String, isNew: Bool) {
+        self.id = id
+        self.noteSourceID = noteSourceID
+        self.isNew = isNew
+    }
+
+    init(candidate: SessionCardCandidate) {
+        self.init(id: candidate.id, noteSourceID: candidate.noteSourceID, isNew: candidate.isNew)
+    }
+
+    var noteKey: String {
+        noteSourceID.isEmpty ? id.uuidString : noteSourceID
+    }
+}
+
+private struct ServingCounterNoteState: Equatable {
+    var hasNew = false
+    var hasReview = false
+
+    var isNewOnly: Bool {
+        hasNew && !hasReview
     }
 }
 
