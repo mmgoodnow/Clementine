@@ -247,11 +247,13 @@ struct ServingCounters: Equatable {
     var total: Int
     var new: Int
     var review: Int
+    var plannedTotal: Int
 
-    init(total: Int = 0, new: Int = 0, review: Int = 0) {
+    init(total: Int = 0, new: Int = 0, review: Int = 0, plannedTotal: Int? = nil) {
         self.total = total
         self.new = new
         self.review = review
+        self.plannedTotal = plannedTotal ?? total
     }
 
     init(cards: [SessionCardCandidate]) {
@@ -259,7 +261,8 @@ struct ServingCounters: Equatable {
         self.init(
             total: cards.count,
             new: newCount,
-            review: cards.count - newCount
+            review: cards.count - newCount,
+            plannedTotal: cards.count
         )
     }
 

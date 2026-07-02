@@ -24,6 +24,8 @@ struct ContentView: View {
     @State private var recentCardIDs: [UUID] = []
     @State private var recentNoteSourceIDs: [String] = []
     @State private var servingCounters = ServingCounters()
+    @State private var servingPlannedCardIDs: Set<UUID> = []
+    @State private var hasLivePlanChanged = false
     @State private var isServingPassActive = false
 
     var body: some View {
@@ -172,6 +174,8 @@ struct ContentView: View {
                 servingCount: servingCounters.total,
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
+                plannedServingCount: servingCounters.plannedTotal,
+                hasLivePlanChanged: hasLivePlanChanged,
                 newCount: newCount,
                 explanation: explanation
             )
@@ -231,6 +235,7 @@ struct ContentView: View {
             startServingPass(with: decision.orderedCards)
         }
         if let selectedCandidate {
+            noteSelectedCandidate(selectedCandidate)
             rememberShown(candidate: selectedCandidate)
         }
         selectedChoice = nil
@@ -248,13 +253,24 @@ struct ContentView: View {
         }
     }
 
+    private func noteSelectedCandidate(_ candidate: SessionCardCandidate) {
+        if isServingPassActive, !servingPlannedCardIDs.contains(candidate.id) {
+            hasLivePlanChanged = true
+            servingPlannedCardIDs.insert(candidate.id)
+        }
+    }
+
     private func endServingPass() {
         servingCounters = ServingCounters()
+        servingPlannedCardIDs = []
+        hasLivePlanChanged = false
         isServingPassActive = false
     }
 
     private func startServingPass(with cards: [SessionCardCandidate]) {
         servingCounters = ServingCounters(cards: cards)
+        servingPlannedCardIDs = Set(cards.map(\.id))
+        hasLivePlanChanged = false
         isServingPassActive = true
     }
 
@@ -455,6 +471,8 @@ private struct StudyPrompt {
     var servingCount: Int
     var servingNewCount: Int
     var servingReviewCount: Int
+    var plannedServingCount: Int
+    var hasLivePlanChanged: Bool
     var newCount: Int
     var explanation: CardSelectionExplanation
 }
@@ -505,6 +523,8 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
+                plannedServingCount: prompt.plannedServingCount,
+                hasLivePlanChanged: prompt.hasLivePlanChanged,
                 newCount: prompt.newCount,
                 explanation: prompt.explanation
             )
@@ -555,13 +575,15 @@ private struct StudyStatusBar: View {
     var servingCount: Int
     var servingNewCount: Int
     var servingReviewCount: Int
+    var plannedServingCount: Int
+    var hasLivePlanChanged: Bool
     var newCount: Int
     var explanation: CardSelectionExplanation
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Text("\(servingCount) serving · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
+                Text("\(servingCount) live · \(servingNewCount) new · \(servingReviewCount) review · \(newCount) unseen")
                 Spacer()
             }
 
@@ -578,6 +600,12 @@ private struct StudyStatusBar: View {
                         .fontWeight(.semibold)
                     Text(explanation.detail)
                 }
+            }
+
+            if hasLivePlanChanged {
+                Text("Live plan changed from \(plannedServingCount) as reviews became due or Again cards returned.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
         }
         .font(.callout)

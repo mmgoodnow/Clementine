@@ -71,7 +71,8 @@ final class StudyDomainTests: XCTestCase {
             now: now
         )
 
-        XCTAssertEqual(counters, ServingCounters(total: 53, new: 30, review: 23))
+        XCTAssertEqual(counters, ServingCounters(total: 53, new: 30, review: 23, plannedTotal: 54))
+        XCTAssertEqual(counters.plannedTotal, 54)
     }
 
     func testServingCountersKeepAgainReviewInCurrentServingPlan() {
@@ -86,6 +87,7 @@ final class StudyDomainTests: XCTestCase {
         )
 
         XCTAssertEqual(counters, ServingCounters(total: 54, new: 30, review: 24))
+        XCTAssertEqual(counters.plannedTotal, 54)
     }
 
     func testServingCountersMoveAgainNewCardIntoReviews() {
@@ -100,6 +102,7 @@ final class StudyDomainTests: XCTestCase {
         )
 
         XCTAssertEqual(counters, ServingCounters(total: 54, new: 29, review: 25))
+        XCTAssertEqual(counters.plannedTotal, 54)
     }
 
     func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
