@@ -14,6 +14,7 @@ struct ContentView: View {
 
     @State private var selectedTab: AppTab = .study
     @State private var activeCardID: UUID?
+    @State private var activeInteractionMode: StudyInteractionMode?
     @State private var activeChoiceSeed = UUID().uuidString
     @State private var selectedChoice: String?
     @State private var isAnswerRevealed = false
@@ -179,8 +180,7 @@ struct ContentView: View {
         let duplicateCount = cards.filter {
             !$0.isSuspended && $0.cardKey == activeCard.cardKey
         }.count
-        let lastReview = reviews.first { $0.cardKey == activeCard.cardKey }
-        let lastGrade = lastReview.flatMap { ReviewGrade(rawValue: $0.gradeRaw) }
+        let lastGrade = lastGrade(for: activeCard)
         let explanation = CardSelectionExplainer.explanation(
             isNew: activeCard.fsrsCardData == nil,
             dueAt: activeCard.dueAt,
@@ -188,11 +188,7 @@ struct ContentView: View {
             lastGrade: lastGrade,
             now: now
         )
-        let interactionMode = StudyInteractionPolicy.mode(
-            kind: activeCard.kind,
-            isNew: activeCard.fsrsCardData == nil,
-            lastGrade: lastGrade
-        )
+        let interactionMode = activeInteractionMode ?? interactionMode(for: activeCard)
 
         return .card(
             StudyPrompt(
@@ -231,6 +227,7 @@ struct ContentView: View {
         } else if isServingPassActive, servingCounters.total <= 0 {
             endServingPass()
             activeCardID = nil
+            activeInteractionMode = nil
             activeChoiceSeed = UUID().uuidString
             selectedChoice = nil
             isAnswerRevealed = false
@@ -257,6 +254,12 @@ struct ContentView: View {
         )
 
         activeCardID = selectedCandidate?.id
+        if let selectedCandidate,
+           let selectedCard = cards.first(where: { $0.id == selectedCandidate.id }) {
+            activeInteractionMode = interactionMode(for: selectedCard)
+        } else {
+            activeInteractionMode = nil
+        }
         activeChoiceSeed = selectedCandidate.map { candidate in
             "\(candidate.id.uuidString)#\(now.timeIntervalSinceReferenceDate)#\(reviews.count)"
         } ?? UUID().uuidString
@@ -369,6 +372,20 @@ struct ContentView: View {
 
     private func correctAnswer(for card: StudyCard, note: VocabularyNote) -> String {
         card.kind == .hanziToPinyin ? note.pinyin : note.english
+    }
+
+    private func interactionMode(for card: StudyCard) -> StudyInteractionMode {
+        StudyInteractionPolicy.mode(
+            kind: card.kind,
+            isNew: card.fsrsCardData == nil,
+            lastGrade: lastGrade(for: card)
+        )
+    }
+
+    private func lastGrade(for card: StudyCard) -> ReviewGrade? {
+        reviews
+            .first { $0.cardKey == card.cardKey }
+            .flatMap { ReviewGrade(rawValue: $0.gradeRaw) }
     }
 
     private func chooseAnswer(_ answer: String) {
