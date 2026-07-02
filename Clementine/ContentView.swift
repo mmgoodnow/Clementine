@@ -717,13 +717,6 @@ private struct MultipleChoiceControls: View {
                 .controlSize(.large)
                 .disabled(selectedChoice != nil)
             }
-
-            if let selectedChoice, selectedChoice != prompt.correctAnswer {
-                Label("Correct answer: \(prompt.correctAnswer)", systemImage: "checkmark.circle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
-            }
         }
     }
 }
