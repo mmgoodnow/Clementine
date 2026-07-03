@@ -470,7 +470,7 @@ struct ContentView: View {
 
     private func scheduleMultipleChoiceAdvance(cardID: UUID, selectedAnswer: String, wasCorrect: Bool) {
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(wasCorrect ? 0.35 : 0.65))
+            try? await Task.sleep(for: .seconds(wasCorrect ? 0.6 : 0.85))
             guard activeCardID == cardID, selectedChoice == selectedAnswer else { return }
             moveToNextCard()
         }
@@ -702,10 +702,13 @@ private struct MultipleChoiceControls: View {
 
             ForEach(prompt.choices, id: \.self) { choice in
                 Button {
-                    withAnimation(.easeOut(duration: 0.08)) {
+                    withAnimation(.easeOut(duration: 0.05)) {
                         selectedChoice = choice
                     }
-                    chooseAnswer(choice)
+                    Task { @MainActor in
+                        await Task.yield()
+                        chooseAnswer(choice)
+                    }
                 } label: {
                     MultipleChoiceButtonLabel(
                         choice: choice,
