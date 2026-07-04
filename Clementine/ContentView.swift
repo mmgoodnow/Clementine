@@ -164,11 +164,14 @@ struct ContentView: View {
         }
     }
 
-    private func currentDesiredRetention(now: Date) -> Double {
+    private func currentDesiredRetention(
+        now: Date,
+        candidates: [SessionCardCandidate]
+    ) -> Double {
         AdaptiveSessionPolicy.desiredRetention(
             pace: settings?.learningPace ?? .balanced,
             forecastedReviewLoad: AdaptiveSessionPolicy.forecastedReviewLoad(
-                from: sessionCandidates(includeSuspended: true),
+                from: candidates,
                 now: now
             ),
             recentAccuracy: recentAccuracy
@@ -249,8 +252,11 @@ struct ContentView: View {
 
         let now = Date()
         let candidatesStart = Date()
-        let candidates = sessionCandidates(includeSuspended: true)
-        let loadCandidates = sessionCandidates(includeSuspended: true)
+        let recentAgainCounts = recentAgainCountsByCardKey
+        let candidates = sessionCandidates(
+            includeSuspended: true,
+            recentAgainCounts: recentAgainCounts
+        )
         let candidatesMilliseconds = milliseconds(since: candidatesStart)
 
         let historyStart = Date()
@@ -260,7 +266,7 @@ struct ContentView: View {
         let decisionStart = Date()
         let decision = AdaptiveSessionPolicy.chooseCards(
             from: candidates,
-            loadCandidates: loadCandidates,
+            loadCandidates: candidates,
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
@@ -350,8 +356,12 @@ struct ContentView: View {
         isServingPassActive = true
     }
 
-    private func sessionCandidates(includeSuspended: Bool = false) -> [SessionCardCandidate] {
-        cards
+    private func sessionCandidates(
+        includeSuspended: Bool = false,
+        recentAgainCounts: [String: Int]? = nil
+    ) -> [SessionCardCandidate] {
+        let lapseCounts = recentAgainCounts ?? recentAgainCountsByCardKey
+        return cards
             .filter { includeSuspended || !$0.isSuspended }
             .map { card in
                 SessionCardCandidate(
@@ -359,22 +369,25 @@ struct ContentView: View {
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
                     isSuspended: card.isSuspended,
-                    recentLapses: recentLapses(for: card.cardKey),
+                    recentLapses: lapseCounts[card.cardKey] ?? 0,
+                    cardKey: card.cardKey,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
                 )
             }
     }
 
-    private func continuePastNaturalStop() {
-        moveToNextCard(forceNewCards: true)
+    private var recentAgainCountsByCardKey: [String: Int] {
+        var counts: [String: Int] = [:]
+        for review in reviews where review.gradeRaw == ReviewGrade.again.rawValue {
+            guard counts[review.cardKey, default: 0] < 12 else { continue }
+            counts[review.cardKey, default: 0] += 1
+        }
+        return counts
     }
 
-    private func recentLapses(for cardKey: String) -> Int {
-        reviews
-            .filter { $0.cardKey == cardKey && $0.gradeRaw == ReviewGrade.again.rawValue }
-            .prefix(12)
-            .count
+    private func continuePastNaturalStop() {
+        moveToNextCard(forceNewCards: true)
     }
 
     private var suspendedCardCount: Int {
@@ -545,7 +558,14 @@ struct ContentView: View {
             let now = Date()
             let wasServingNewCard = card.fsrsCardData == nil
             let retentionStart = Date()
-            let desiredRetention = currentDesiredRetention(now: now)
+            let retentionCandidates = sessionCandidates(
+                includeSuspended: true,
+                recentAgainCounts: recentAgainCountsByCardKey
+            )
+            let desiredRetention = currentDesiredRetention(
+                now: now,
+                candidates: retentionCandidates
+            )
             let retentionMilliseconds = milliseconds(since: retentionStart)
 
             let fsrsStart = Date()
@@ -577,6 +597,7 @@ struct ContentView: View {
             let counterStart = Date()
             servingCounters.consumeReview(
                 cardID: card.id,
+                cardKey: card.cardKey,
                 noteSourceID: note.sourceID,
                 wasNew: wasServingNewCard,
                 grade: grade,
@@ -1359,6 +1380,7 @@ private struct ProgressViewContent: View {
                     isNew: card.fsrsCardData == nil,
                     isSuspended: card.isSuspended,
                     recentLapses: recentAgainCounts[card.cardKey] ?? 0,
+                    cardKey: card.cardKey,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
                 )
@@ -1371,6 +1393,7 @@ private struct ProgressViewContent: View {
                     isNew: card.fsrsCardData == nil,
                     isSuspended: card.isSuspended,
                     recentLapses: recentAgainCounts[card.cardKey] ?? 0,
+                    cardKey: card.cardKey,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
                 )

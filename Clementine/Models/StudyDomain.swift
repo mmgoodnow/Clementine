@@ -196,6 +196,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
     var isNew: Bool
     var isSuspended: Bool
     var recentLapses: Int
+    var cardKey: String = ""
     var noteSourceID: String = ""
     var kind: CardKind = .hanziToMeaning
 
@@ -205,6 +206,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
         isNew: Bool,
         isSuspended: Bool = false,
         recentLapses: Int,
+        cardKey: String = "",
         noteSourceID: String = "",
         kind: CardKind = .hanziToMeaning
     ) {
@@ -213,6 +215,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
         self.isNew = isNew
         self.isSuspended = isSuspended
         self.recentLapses = recentLapses
+        self.cardKey = cardKey
         self.noteSourceID = noteSourceID
         self.kind = kind
     }
@@ -292,7 +295,7 @@ struct CardSelectionExplanation: Equatable {
 }
 
 struct ServingCounters: Equatable {
-    private var remainingItems: [UUID: ServingCounterItem]
+    private var remainingItems: [String: ServingCounterItem]
     private var plannedNoteKeys: Set<String>
 
     var total: Int {
@@ -318,37 +321,49 @@ struct ServingCounters: Equatable {
 
     init(cards: [SessionCardCandidate]) {
         let items = cards.map(ServingCounterItem.init(candidate:))
-        remainingItems = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        remainingItems = items.reduce(into: [:]) { remainingItems, item in
+            remainingItems[item.counterKey] = item
+        }
         plannedNoteKeys = Set(items.map(\.noteKey))
     }
 
     mutating func consumeReview(
         cardID: UUID,
+        cardKey: String,
         noteSourceID: String,
         wasNew: Bool,
         grade: ReviewGrade,
         scheduledDueAt: Date,
         now: Date
     ) {
-        remainingItems.removeValue(forKey: cardID)
+        let reviewedItem = ServingCounterItem(
+            id: cardID,
+            cardKey: cardKey,
+            noteSourceID: noteSourceID,
+            isNew: wasNew
+        )
+        remainingItems.removeValue(forKey: reviewedItem.counterKey)
 
         if grade == .again, scheduledDueAt <= now {
-            remainingItems[cardID] = ServingCounterItem(
+            let returnedItem = ServingCounterItem(
                 id: cardID,
+                cardKey: cardKey,
                 noteSourceID: noteSourceID,
                 isNew: false
             )
+            remainingItems[returnedItem.counterKey] = returnedItem
         }
     }
 
     mutating func includeLiveChange(_ candidate: SessionCardCandidate) {
         let item = ServingCounterItem(candidate: candidate)
-        remainingItems[candidate.id] = item
+        remainingItems[item.counterKey] = item
         plannedNoteKeys.insert(item.noteKey)
     }
 
     func contains(_ candidate: SessionCardCandidate) -> Bool {
-        remainingItems[candidate.id] == ServingCounterItem(candidate: candidate)
+        let item = ServingCounterItem(candidate: candidate)
+        return remainingItems[item.counterKey] == item
     }
 
     private var noteStates: [String: ServingCounterNoteState] {
@@ -363,17 +378,30 @@ struct ServingCounters: Equatable {
 
 private struct ServingCounterItem: Equatable {
     var id: UUID
+    var cardKey: String
     var noteSourceID: String
     var isNew: Bool
 
-    init(id: UUID, noteSourceID: String, isNew: Bool) {
+    init(id: UUID, cardKey: String, noteSourceID: String, isNew: Bool) {
         self.id = id
+        self.cardKey = cardKey
         self.noteSourceID = noteSourceID
         self.isNew = isNew
     }
 
     init(candidate: SessionCardCandidate) {
-        self.init(id: candidate.id, noteSourceID: candidate.noteSourceID, isNew: candidate.isNew)
+        self.init(
+            id: candidate.id,
+            cardKey: candidate.cardKey,
+            noteSourceID: candidate.noteSourceID,
+            isNew: candidate.isNew
+        )
+    }
+
+    var counterKey: String {
+        if !noteSourceID.isEmpty { return noteSourceID }
+        if !cardKey.isEmpty { return cardKey }
+        return id.uuidString
     }
 
     var noteKey: String {

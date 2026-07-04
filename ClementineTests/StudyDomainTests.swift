@@ -97,6 +97,7 @@ final class StudyDomainTests: XCTestCase {
 
         counters.consumeReview(
             cardID: reviewID,
+            cardKey: "",
             noteSourceID: "hsk2-0001",
             wasNew: false,
             grade: .good,
@@ -120,6 +121,7 @@ final class StudyDomainTests: XCTestCase {
 
         counters.consumeReview(
             cardID: reviewID,
+            cardKey: "",
             noteSourceID: "hsk2-0001",
             wasNew: false,
             grade: .again,
@@ -143,6 +145,7 @@ final class StudyDomainTests: XCTestCase {
 
         counters.consumeReview(
             cardID: newID,
+            cardKey: "",
             noteSourceID: "hsk2-0001",
             wasNew: true,
             grade: .again,
@@ -166,6 +169,7 @@ final class StudyDomainTests: XCTestCase {
 
         counters.consumeReview(
             cardID: cardID,
+            cardKey: "",
             noteSourceID: "hsk2-0001",
             wasNew: true,
             grade: .hard,
@@ -201,6 +205,7 @@ final class StudyDomainTests: XCTestCase {
 
         counters.consumeReview(
             cardID: meaningID,
+            cardKey: "",
             noteSourceID: "hsk2-0001",
             wasNew: true,
             grade: .good,
@@ -208,9 +213,37 @@ final class StudyDomainTests: XCTestCase {
             now: now
         )
 
-        XCTAssertEqual(counters.total, 2)
-        XCTAssertEqual(counters.new, 1)
+        XCTAssertEqual(counters.total, 1)
+        XCTAssertEqual(counters.new, 0)
         XCTAssertEqual(counters.review, 1)
+    }
+
+    func testServingCountersConsumeDuplicateLocalRecordsAsOneVocabularyItem() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let firstID = UUID(uuidString: "00000000-0000-0000-0000-000000000013")!
+        let duplicateID = UUID(uuidString: "00000000-0000-0000-0000-000000000014")!
+        var counters = ServingCounters(cards: [
+            candidate(id: firstID, noteSourceID: "hsk2-0001", isNew: false),
+            candidate(id: duplicateID, noteSourceID: "hsk2-0001", isNew: false),
+            candidate(id: UUID(uuidString: "00000000-0000-0000-0000-000000000015")!, noteSourceID: "hsk2-0002", isNew: false),
+        ])
+
+        XCTAssertEqual(counters.total, 2)
+        XCTAssertEqual(counters.review, 2)
+
+        counters.consumeReview(
+            cardID: firstID,
+            cardKey: "legacy-duplicate-key",
+            noteSourceID: "hsk2-0001",
+            wasNew: false,
+            grade: .good,
+            scheduledDueAt: now.addingTimeInterval(60 * 60 * 24),
+            now: now
+        )
+
+        XCTAssertEqual(counters.total, 1)
+        XCTAssertEqual(counters.review, 1)
+        XCTAssertEqual(counters.plannedTotal, 2)
     }
 
     func testMultipleChoiceDistractorsUseWholePoolBeforeTruncating() {
@@ -1247,6 +1280,7 @@ final class StudyDomainTests: XCTestCase {
             dueAt: dueAt,
             isNew: isNew,
             recentLapses: 0,
+            cardKey: noteSourceID,
             noteSourceID: noteSourceID
         )
     }
