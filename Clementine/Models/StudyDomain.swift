@@ -432,6 +432,7 @@ enum AdaptiveSessionPolicy {
 
     static func chooseCards(
         from candidates: [SessionCardCandidate],
+        loadCandidates: [SessionCardCandidate]? = nil,
         pace: LearningPace,
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
@@ -441,6 +442,7 @@ enum AdaptiveSessionPolicy {
     ) -> SessionDecision {
         let intakeForecast = newCardIntakeForecast(
             from: candidates,
+            loadCandidates: loadCandidates,
             pace: pace,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
@@ -574,6 +576,7 @@ enum AdaptiveSessionPolicy {
 
     static func newCardIntakeForecast(
         from candidates: [SessionCardCandidate],
+        loadCandidates: [SessionCardCandidate]? = nil,
         pace: LearningPace,
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
@@ -582,8 +585,9 @@ enum AdaptiveSessionPolicy {
         forceNewCards: Bool = false
     ) -> NewCardIntakeForecast {
         let availableNewCards = candidates.filter(\.isNew).count
-        let relearningDebt = relearningDebt(from: candidates, now: now)
-        let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
+        let workloadCandidates = loadCandidates ?? candidates
+        let relearningDebt = relearningDebt(from: workloadCandidates, now: now)
+        let forecastedReviewLoad = forecastedReviewLoad(from: workloadCandidates, now: now)
         let availableLoad = max(0, pace.reviewLoadBudget - forecastedReviewLoad)
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
 

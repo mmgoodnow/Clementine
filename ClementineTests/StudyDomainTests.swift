@@ -732,6 +732,45 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(forecast.newCardsToServe, forecast.passLimit)
     }
 
+    func testSuspendedReviewLoadStillBlocksNewCardIntake() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let selectableNewCards = (0..<80).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+        let suspendedWorkload = (0..<LearningPace.low.reviewLoadBudget).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index + 1) * 60),
+                isNew: false,
+                recentLapses: 0
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: selectableNewCards,
+            loadCandidates: selectableNewCards + suspendedWorkload,
+            pace: .low,
+            recentAccuracy: 0.9,
+            now: now
+        )
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: selectableNewCards,
+            loadCandidates: selectableNewCards + suspendedWorkload,
+            pace: .low,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.forecastedReviewLoad, LearningPace.low.reviewLoadBudget)
+        XCTAssertEqual(forecast.newCardsToServe, 0)
+        XCTAssertTrue(decision.orderedCards.isEmpty)
+    }
+
     func testRelearningDebtConsumesReviewBudgetForNewCardIntake() {
         let now = Date(timeIntervalSince1970: 1_000)
         let relearningReviews = (0..<LearningPace.low.reviewLoadBudget / 4).map { index in

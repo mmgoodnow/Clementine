@@ -145,7 +145,7 @@ struct ContentView: View {
         AdaptiveSessionPolicy.desiredRetention(
             pace: settings?.learningPace ?? .balanced,
             forecastedReviewLoad: AdaptiveSessionPolicy.forecastedReviewLoad(
-                from: sessionCandidates(),
+                from: sessionCandidates(includeSuspended: true),
                 now: now
             ),
             recentAccuracy: recentAccuracy
@@ -238,9 +238,11 @@ struct ContentView: View {
 
         let now = Date()
         let candidates = sessionCandidates()
+        let loadCandidates = sessionCandidates(includeSuspended: true)
 
         let decision = AdaptiveSessionPolicy.chooseCards(
             from: candidates,
+            loadCandidates: loadCandidates,
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
@@ -316,9 +318,9 @@ struct ContentView: View {
         isServingPassActive = true
     }
 
-    private func sessionCandidates() -> [SessionCardCandidate] {
+    private func sessionCandidates(includeSuspended: Bool = false) -> [SessionCardCandidate] {
         cards
-            .filter { !$0.isSuspended }
+            .filter { includeSuspended || !$0.isSuspended }
             .map { card in
                 SessionCardCandidate(
                     id: card.id,
@@ -1297,8 +1299,19 @@ private struct ProgressViewContent: View {
     private var progressSnapshot: ProgressSnapshot {
         let now = Date()
         let recentAgainCounts = recentAgainCountsByCardKey
-        let candidates = cards
+        let selectableCandidates = cards
             .filter { !$0.isSuspended }
+            .map { card in
+                SessionCardCandidate(
+                    id: card.id,
+                    dueAt: card.dueAt,
+                    isNew: card.fsrsCardData == nil,
+                    recentLapses: recentAgainCounts[card.cardKey] ?? 0,
+                    noteSourceID: card.noteSourceID,
+                    kind: card.kind
+                )
+            }
+        let workloadCandidates = cards
             .map { card in
                 SessionCardCandidate(
                     id: card.id,
@@ -1319,7 +1332,8 @@ private struct ProgressViewContent: View {
         let recentAccuracy = recentAccuracy
         let newCardsStudiedToday = newCardsStudiedToday
         let intakeForecast = AdaptiveSessionPolicy.newCardIntakeForecast(
-            from: candidates,
+            from: selectableCandidates,
+            loadCandidates: workloadCandidates,
             pace: learningPace,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
@@ -1357,7 +1371,7 @@ private struct ProgressViewContent: View {
             loadSheddingCandidateIDs: loadSheddingCandidateIDs,
             resumeSuspendedCardIDs: resumeSuspendedCardIDs,
             intakeForecast: intakeForecast,
-            reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: candidates, now: now),
+            reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: workloadCandidates, now: now),
             introducedVocabularyPoints: introducedVocabularyPoints,
             accuracyPoints: accuracyPoints,
             reviewMixSegments: reviewMixSegments
