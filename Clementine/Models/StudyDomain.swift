@@ -711,8 +711,9 @@ enum LoadSheddingPolicy {
         guard targetCount > 0 else { return [] }
 
         let groupedReviews = Dictionary(grouping: reviews, by: \.cardKey)
+            .mapValues { $0.sorted { $0.reviewedAt > $1.reviewedAt } }
         let candidates = activeIntroducedCards.compactMap { card -> LoadSheddingCandidate? in
-            let cardReviews = (groupedReviews[card.cardKey] ?? []).sorted { $0.reviewedAt > $1.reviewedAt }
+            let cardReviews = groupedReviews[card.cardKey] ?? []
             let recentReviews = Array(cardReviews.prefix(12))
             let reviewCount = recentReviews.count
             let againCount = recentReviews.filter { $0.grade == .again }.count

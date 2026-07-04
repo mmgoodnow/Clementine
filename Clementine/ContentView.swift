@@ -52,8 +52,6 @@ struct ContentView: View {
                     cards: cards,
                     reviews: reviews,
                     learningPace: settings?.learningPace ?? .balanced,
-                    suspendedCardCount: suspendedCardCount,
-                    loadSheddingCandidateCount: loadSheddingCandidateIDs.count,
                     reduceActiveLoad: reduceActiveLoad,
                     resumeSuspendedCards: resumeSuspendedCards
                 )
@@ -1079,16 +1077,16 @@ private struct ProgressViewContent: View {
     var cards: [StudyCard]
     var reviews: [ReviewEvent]
     var learningPace: LearningPace
-    var suspendedCardCount: Int
-    var loadSheddingCandidateCount: Int
     var reduceActiveLoad: () -> Void
     var resumeSuspendedCards: () -> Void
 
     var body: some View {
+        let snapshot = progressSnapshot
+
         List {
             Section {
                 HStack(spacing: 14) {
-                    ProgressMetric(title: "Introduced", value: "\(introducedVocabularyCount)", systemImage: "character.book.closed")
+                    ProgressMetric(title: "Introduced", value: "\(snapshot.introducedVocabularyCount)", systemImage: "character.book.closed")
                     ProgressMetric(title: "Deck", value: "\(notes.count)", systemImage: "rectangle.stack")
                     ProgressMetric(title: "Reviews", value: "\(reviews.count)", systemImage: "checkmark.circle")
                 }
@@ -1100,17 +1098,17 @@ private struct ProgressViewContent: View {
                     HStack(spacing: 14) {
                         ProgressMetric(
                             title: "New Vocab",
-                            value: "\(intakeForecast.newCardsToServe)",
+                            value: "\(snapshot.intakeForecast.newCardsToServe)",
                             systemImage: "plus.rectangle.on.rectangle"
                         )
                         ProgressMetric(
                             title: "7-Day Due",
-                            value: "\(intakeForecast.forecastedReviewLoad)",
+                            value: "\(snapshot.intakeForecast.forecastedReviewLoad)",
                             systemImage: "calendar"
                         )
                         ProgressMetric(
                             title: "Limited By",
-                            value: intakeForecast.limitingFactor.rawValue,
+                            value: snapshot.intakeForecast.limitingFactor.rawValue,
                             systemImage: "gauge.with.dots.needle.50percent"
                         )
                     }
@@ -1118,23 +1116,23 @@ private struct ProgressViewContent: View {
                     VStack(spacing: 10) {
                         ForecastRow(
                             title: "Review budget",
-                            value: "\(intakeForecast.forecastedReviewLoad) / \(intakeForecast.reviewLoadBudget)"
+                            value: "\(snapshot.intakeForecast.forecastedReviewLoad) / \(snapshot.intakeForecast.reviewLoadBudget)"
                         )
-                        if intakeForecast.relearningDebt > 0 {
+                        if snapshot.intakeForecast.relearningDebt > 0 {
                             ForecastRow(
                                 title: "Relearning debt",
-                                value: "+\(intakeForecast.relearningDebt)"
+                                value: "+\(snapshot.intakeForecast.relearningDebt)"
                             )
                         }
                         ForecastRow(
                             title: "Available review room",
-                            value: "\(intakeForecast.availableReviewBudget)"
+                            value: "\(snapshot.intakeForecast.availableReviewBudget)"
                         )
                         ForecastRow(
                             title: "Per-new-vocab cost",
-                            value: intakeForecast.expectedReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
+                            value: snapshot.intakeForecast.expectedReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
                         )
-                        if let historicalReviewLoadPerNewCard = intakeForecast.historicalReviewLoadPerNewCard {
+                        if let historicalReviewLoadPerNewCard = snapshot.intakeForecast.historicalReviewLoadPerNewCard {
                             ForecastRow(
                                 title: "History estimate",
                                 value: historicalReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
@@ -1142,15 +1140,15 @@ private struct ProgressViewContent: View {
                         }
                         ForecastRow(
                             title: "Accuracy",
-                            value: intakeForecast.recentAccuracy.formatted(.percent.precision(.fractionLength(0)))
+                            value: snapshot.intakeForecast.recentAccuracy.formatted(.percent.precision(.fractionLength(0)))
                         )
                         ForecastRow(
                             title: "Retention target",
-                            value: intakeForecast.desiredRetention.formatted(.percent.precision(.fractionLength(0)))
+                            value: snapshot.intakeForecast.desiredRetention.formatted(.percent.precision(.fractionLength(0)))
                         )
                         ForecastRow(
                             title: "Today",
-                            value: "\(intakeForecast.newCardsStudiedToday) / \(intakeForecast.dayLimit) new"
+                            value: "\(snapshot.intakeForecast.newCardsStudiedToday) / \(snapshot.intakeForecast.dayLimit) new"
                         )
                     }
                 }
@@ -1162,17 +1160,17 @@ private struct ProgressViewContent: View {
                     HStack(spacing: 14) {
                         ProgressMetric(
                             title: "Active",
-                            value: "\(activeIntroducedCardCount)",
+                            value: "\(snapshot.activeIntroducedCardCount)",
                             systemImage: "tray.full"
                         )
                         ProgressMetric(
                             title: "Friction",
-                            value: "\(loadSheddingCandidateCount)",
+                            value: "\(snapshot.loadSheddingCandidateCount)",
                             systemImage: "exclamationmark.triangle"
                         )
                         ProgressMetric(
                             title: "Suspended",
-                            value: "\(suspendedCardCount)",
+                            value: "\(snapshot.suspendedCardCount)",
                             systemImage: "pause.circle"
                         )
                     }
@@ -1183,9 +1181,9 @@ private struct ProgressViewContent: View {
                         } label: {
                             Label("Reduce active load", systemImage: "tray.and.arrow.down")
                         }
-                        .disabled(loadSheddingCandidateCount == 0)
+                        .disabled(snapshot.loadSheddingCandidateCount == 0)
 
-                        if suspendedCardCount > 0 {
+                        if snapshot.suspendedCardCount > 0 {
                             Button {
                                 resumeSuspendedCards()
                             } label: {
@@ -1199,7 +1197,7 @@ private struct ProgressViewContent: View {
 
             Section("Review Forecast") {
                 Chart {
-                    ForEach(reviewLoadForecast) { point in
+                    ForEach(snapshot.reviewLoadForecast) { point in
                         BarMark(
                             x: .value("Day", point.day, unit: .day),
                             y: .value("Due", point.count)
@@ -1218,10 +1216,10 @@ private struct ProgressViewContent: View {
             }
 
             Section("Introduced Vocabulary") {
-                if introducedVocabularyPoints.isEmpty {
+                if snapshot.introducedVocabularyPoints.isEmpty {
                     EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
-                    Chart(introducedVocabularyPoints) { point in
+                    Chart(snapshot.introducedVocabularyPoints) { point in
                         AreaMark(
                             x: .value("Day", point.day, unit: .day),
                             y: .value("Introduced", point.count)
@@ -1244,10 +1242,10 @@ private struct ProgressViewContent: View {
             }
 
             Section("Accuracy") {
-                if accuracyPoints.isEmpty {
+                if snapshot.accuracyPoints.isEmpty {
                     EmptyChartMessage(text: "Accuracy will appear after reviews.")
                 } else {
-                    Chart(accuracyPoints) { point in
+                    Chart(snapshot.accuracyPoints) { point in
                         BarMark(
                             x: .value("Day", point.day, unit: .day),
                             y: .value("Accuracy", point.accuracy)
@@ -1272,10 +1270,10 @@ private struct ProgressViewContent: View {
             }
 
             Section("Study Mix") {
-                if reviewMixSegments.isEmpty {
+                if snapshot.reviewMixSegments.isEmpty {
                     EmptyChartMessage(text: "New and review mix will appear after reviews.")
                 } else {
-                    Chart(reviewMixSegments) { segment in
+                    Chart(snapshot.reviewMixSegments) { segment in
                         BarMark(
                             x: .value("Day", segment.day, unit: .day),
                             y: .value("Cards", segment.count)
@@ -1302,49 +1300,93 @@ private struct ProgressViewContent: View {
         .navigationTitle("Progress")
     }
 
-    private var introducedVocabularyCount: Int {
-        Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count
-    }
-
-    private var intakeForecast: NewCardIntakeForecast {
-        AdaptiveSessionPolicy.newCardIntakeForecast(
-            from: sessionCandidates,
-            pace: learningPace,
-            recentAccuracy: recentAccuracy,
-            newCardsStudiedToday: newCardsStudiedToday,
-            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
-            now: Date()
-        )
-    }
-
-    private var reviewLoadForecast: [ReviewLoadForecastDay] {
-        AdaptiveSessionPolicy.reviewLoadForecastByDay(from: sessionCandidates, now: Date())
-    }
-
-    private var sessionCandidates: [SessionCardCandidate] {
-        cards
+    private var progressSnapshot: ProgressSnapshot {
+        let now = Date()
+        let recentAgainCounts = recentAgainCountsByCardKey
+        let candidates = cards
             .filter { !$0.isSuspended }
             .map { card in
                 SessionCardCandidate(
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
-                    recentLapses: recentLapses(for: card.cardKey),
+                    recentLapses: recentAgainCounts[card.cardKey] ?? 0,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
                 )
             }
+        let reviewHistoryEvents = reviews.map {
+            ReviewHistoryEvent(
+                cardKey: $0.cardKey,
+                noteSourceID: $0.noteSourceID,
+                reviewedAt: $0.reviewedAt
+            )
+        }
+        let recentAccuracy = recentAccuracy
+        let newCardsStudiedToday = newCardsStudiedToday
+        let intakeForecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: candidates,
+            pace: learningPace,
+            recentAccuracy: recentAccuracy,
+            newCardsStudiedToday: newCardsStudiedToday,
+            historicalReviewLoadPerNewCard: AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
+                from: reviewHistoryEvents,
+                now: now
+            ),
+            now: now
+        )
+        let loadSheddingCandidateCount = LoadSheddingPolicy.cardIDsToSuspend(
+            cards: loadSheddingCards,
+            reviews: loadSheddingReviews,
+            now: now
+        ).count
+
+        return ProgressSnapshot(
+            introducedVocabularyCount: Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count,
+            activeIntroducedCardCount: cards.filter { !$0.isSuspended && $0.fsrsCardData != nil }.count,
+            suspendedCardCount: cards.filter(\.isSuspended).count,
+            loadSheddingCandidateCount: loadSheddingCandidateCount,
+            intakeForecast: intakeForecast,
+            reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: candidates, now: now),
+            introducedVocabularyPoints: introducedVocabularyPoints,
+            accuracyPoints: accuracyPoints,
+            reviewMixSegments: reviewMixSegments
+        )
     }
 
-    private var activeIntroducedCardCount: Int {
-        cards.filter { !$0.isSuspended && $0.fsrsCardData != nil }.count
+    private var recentAgainCountsByCardKey: [String: Int] {
+        var counts: [String: Int] = [:]
+        for review in reviews where review.gradeRaw == ReviewGrade.again.rawValue {
+            guard counts[review.cardKey, default: 0] < 12 else { continue }
+            counts[review.cardKey, default: 0] += 1
+        }
+        return counts
     }
 
-    private func recentLapses(for cardKey: String) -> Int {
-        reviews
-            .filter { $0.cardKey == cardKey && $0.gradeRaw == ReviewGrade.again.rawValue }
-            .prefix(12)
-            .count
+    private var loadSheddingCards: [LoadSheddingCard] {
+        cards.map { card in
+            LoadSheddingCard(
+                id: card.id,
+                cardKey: card.cardKey,
+                noteSourceID: card.noteSourceID,
+                dueAt: card.dueAt,
+                isNew: card.fsrsCardData == nil,
+                isSuspended: card.isSuspended
+            )
+        }
+    }
+
+    private var loadSheddingReviews: [LoadSheddingReview] {
+        reviews.compactMap { review in
+            guard let grade = ReviewGrade(rawValue: review.gradeRaw) else { return nil }
+            return LoadSheddingReview(
+                cardKey: review.cardKey,
+                noteSourceID: review.noteSourceID,
+                reviewedAt: review.reviewedAt,
+                grade: grade,
+                wasCorrect: review.wasCorrect
+            )
+        }
     }
 
     private var recentAccuracy: Double {
@@ -1366,23 +1408,6 @@ private struct ProgressViewContent: View {
         }
 
         return count
-    }
-
-    private var historicalReviewLoadPerNewCard: Double? {
-        AdaptiveSessionPolicy.historicalReviewLoadPerNewCard(
-            from: reviewHistoryEvents,
-            now: Date()
-        )
-    }
-
-    private var reviewHistoryEvents: [ReviewHistoryEvent] {
-        reviews.map {
-            ReviewHistoryEvent(
-                cardKey: $0.cardKey,
-                noteSourceID: $0.noteSourceID,
-                reviewedAt: $0.reviewedAt
-            )
-        }
     }
 
     private var introducedVocabularyPoints: [VocabularyPoint] {
@@ -1521,6 +1546,18 @@ private struct EmptyChartMessage: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
     }
+}
+
+private struct ProgressSnapshot {
+    var introducedVocabularyCount: Int
+    var activeIntroducedCardCount: Int
+    var suspendedCardCount: Int
+    var loadSheddingCandidateCount: Int
+    var intakeForecast: NewCardIntakeForecast
+    var reviewLoadForecast: [ReviewLoadForecastDay]
+    var introducedVocabularyPoints: [VocabularyPoint]
+    var accuracyPoints: [AccuracyPoint]
+    var reviewMixSegments: [ReviewMixSegment]
 }
 
 private struct VocabularyPoint: Identifiable {
