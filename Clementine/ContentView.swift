@@ -1156,43 +1156,39 @@ private struct ProgressViewContent: View {
             }
 
             Section("Active Load") {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 14) {
-                        ProgressMetric(
-                            title: "Active",
-                            value: "\(snapshot.activeIntroducedCardCount)",
-                            systemImage: "tray.full"
-                        )
-                        ProgressMetric(
-                            title: "Friction",
-                            value: "\(snapshot.loadSheddingCandidateCount)",
-                            systemImage: "exclamationmark.triangle"
-                        )
-                        ProgressMetric(
-                            title: "Suspended",
-                            value: "\(snapshot.suspendedCardCount)",
-                            systemImage: "pause.circle"
-                        )
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button {
-                            reduceActiveLoad()
-                        } label: {
-                            Label("Reduce active load", systemImage: "tray.and.arrow.down")
-                        }
-                        .disabled(snapshot.loadSheddingCandidateCount == 0)
-
-                        if snapshot.suspendedCardCount > 0 {
-                            Button {
-                                resumeSuspendedCards()
-                            } label: {
-                                Label("Resume 12 suspended", systemImage: "arrow.uturn.up")
-                            }
-                        }
-                    }
+                HStack(spacing: 14) {
+                    ProgressMetric(
+                        title: "Active",
+                        value: "\(snapshot.activeIntroducedCardCount)",
+                        systemImage: "tray.full"
+                    )
+                    ProgressMetric(
+                        title: "Friction",
+                        value: "\(snapshot.loadSheddingCandidateCount)",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    ProgressMetric(
+                        title: "Suspended",
+                        value: "\(snapshot.suspendedCardCount)",
+                        systemImage: "pause.circle"
+                    )
                 }
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+                Button {
+                    reduceActiveLoad()
+                } label: {
+                    Label("Reduce active load", systemImage: "tray.and.arrow.down")
+                }
+                .disabled(snapshot.loadSheddingCandidateCount == 0)
+
+                if snapshot.suspendedCardCount > 0 {
+                    Button {
+                        resumeSuspendedCards()
+                    } label: {
+                        Label("Resume 12 suspended", systemImage: "arrow.uturn.up")
+                    }
+                }
             }
 
             Section("Review Forecast") {
