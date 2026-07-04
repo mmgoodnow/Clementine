@@ -771,6 +771,93 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertTrue(decision.orderedCards.isEmpty)
     }
 
+    func testSuspendedCardsUseIntakeSlotsBeforeUnseenCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let suspendedCards = (0..<80).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index) * 60),
+                isNew: false,
+                isSuspended: true,
+                recentLapses: 0,
+                noteSourceID: "suspended-\(index)"
+            )
+        }
+        let unseenCards = (0..<80).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0,
+                noteSourceID: "new-\(index)"
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: suspendedCards + unseenCards,
+            loadCandidates: suspendedCards + unseenCards,
+            pace: .high,
+            recentAccuracy: 0.9,
+            now: now
+        )
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: suspendedCards + unseenCards,
+            loadCandidates: suspendedCards + unseenCards,
+            pace: .high,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.intakeCardsToServe, LearningPace.high.newCardsPerPassLimit)
+        XCTAssertEqual(forecast.reintroducedCardsToServe, LearningPace.high.newCardsPerPassLimit)
+        XCTAssertEqual(forecast.newCardsToServe, 0)
+        XCTAssertEqual(decision.orderedCards.count, LearningPace.high.newCardsPerPassLimit)
+        XCTAssertTrue(decision.orderedCards.allSatisfy { !$0.isNew && $0.isSuspended })
+    }
+
+    func testNewCardsFillRemainingIntakeAfterSuspendedCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let suspendedCards = (0..<6).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index) * 60),
+                isNew: false,
+                isSuspended: true,
+                recentLapses: 0,
+                noteSourceID: "suspended-\(index)"
+            )
+        }
+        let unseenCards = (0..<80).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0,
+                noteSourceID: "new-\(index)"
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: suspendedCards + unseenCards,
+            loadCandidates: suspendedCards + unseenCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        )
+        let decision = AdaptiveSessionPolicy.chooseCards(
+            from: suspendedCards + unseenCards,
+            loadCandidates: suspendedCards + unseenCards,
+            pace: .balanced,
+            recentAccuracy: 0.9,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.intakeCardsToServe, LearningPace.balanced.newCardsPerPassLimit)
+        XCTAssertEqual(forecast.reintroducedCardsToServe, suspendedCards.count)
+        XCTAssertEqual(forecast.newCardsToServe, LearningPace.balanced.newCardsPerPassLimit - suspendedCards.count)
+        XCTAssertEqual(decision.orderedCards.prefix(suspendedCards.count).map(\.isSuspended), Array(repeating: true, count: suspendedCards.count))
+    }
+
     func testRelearningDebtConsumesReviewBudgetForNewCardIntake() {
         let now = Date(timeIntervalSince1970: 1_000)
         let relearningReviews = (0..<LearningPace.low.reviewLoadBudget / 4).map { index in

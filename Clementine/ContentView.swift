@@ -237,7 +237,7 @@ struct ContentView: View {
         }
 
         let now = Date()
-        let candidates = sessionCandidates()
+        let candidates = sessionCandidates(includeSuspended: true)
         let loadCandidates = sessionCandidates(includeSuspended: true)
 
         let decision = AdaptiveSessionPolicy.chooseCards(
@@ -260,6 +260,11 @@ struct ContentView: View {
         activeCardID = selectedCandidate?.id
         if let selectedCandidate,
            let selectedCard = cards.first(where: { $0.id == selectedCandidate.id }) {
+            if selectedCard.isSuspended {
+                selectedCard.isSuspended = false
+                selectedCard.updatedAt = now
+                scheduleModelSave()
+            }
             activeInteractionMode = interactionMode(for: selectedCard)
         } else {
             activeInteractionMode = nil
@@ -326,6 +331,7 @@ struct ContentView: View {
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
+                    isSuspended: card.isSuspended,
                     recentLapses: recentLapses(for: card.cardKey),
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
@@ -1127,6 +1133,12 @@ private struct ProgressViewContent: View {
                             title: "Available review room",
                             value: "\(snapshot.intakeForecast.availableReviewBudget)"
                         )
+                        if snapshot.intakeForecast.reintroducedCardsToServe > 0 {
+                            ForecastRow(
+                                title: "Reintroductions",
+                                value: "\(snapshot.intakeForecast.reintroducedCardsToServe)"
+                            )
+                        }
                         ForecastRow(
                             title: "Per-new-vocab cost",
                             value: snapshot.intakeForecast.expectedReviewLoadPerNewCard.formatted(.number.precision(.fractionLength(1)))
@@ -1300,12 +1312,12 @@ private struct ProgressViewContent: View {
         let now = Date()
         let recentAgainCounts = recentAgainCountsByCardKey
         let selectableCandidates = cards
-            .filter { !$0.isSuspended }
             .map { card in
                 SessionCardCandidate(
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
+                    isSuspended: card.isSuspended,
                     recentLapses: recentAgainCounts[card.cardKey] ?? 0,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
@@ -1317,6 +1329,7 @@ private struct ProgressViewContent: View {
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
+                    isSuspended: card.isSuspended,
                     recentLapses: recentAgainCounts[card.cardKey] ?? 0,
                     noteSourceID: card.noteSourceID,
                     kind: card.kind

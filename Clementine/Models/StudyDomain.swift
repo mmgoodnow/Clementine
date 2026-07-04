@@ -194,6 +194,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
     var id: UUID
     var dueAt: Date
     var isNew: Bool
+    var isSuspended: Bool
     var recentLapses: Int
     var noteSourceID: String = ""
     var kind: CardKind = .hanziToMeaning
@@ -202,6 +203,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
         id: UUID,
         dueAt: Date,
         isNew: Bool,
+        isSuspended: Bool = false,
         recentLapses: Int,
         noteSourceID: String = "",
         kind: CardKind = .hanziToMeaning
@@ -209,6 +211,7 @@ struct SessionCardCandidate: Identifiable, Equatable {
         self.id = id
         self.dueAt = dueAt
         self.isNew = isNew
+        self.isSuspended = isSuspended
         self.recentLapses = recentLapses
         self.noteSourceID = noteSourceID
         self.kind = kind
@@ -257,7 +260,10 @@ struct NewCardIntakeForecast: Equatable {
     }
 
     var newCardsToServe: Int
+    var reintroducedCardsToServe: Int
+    var intakeCardsToServe: Int
     var availableNewCards: Int
+    var availableReintroductionCards: Int
     var forecastedReviewLoad: Int
     var relearningDebt: Int
     var reviewLoadBudget: Int
@@ -451,7 +457,7 @@ enum AdaptiveSessionPolicy {
             forceNewCards: forceNewCards
         )
         let dueReviews = candidates
-            .filter { !$0.isNew && $0.dueAt <= now }
+            .filter { !$0.isNew && !$0.isSuspended && $0.dueAt <= now }
             .sorted { lhs, rhs in
                 if lhs.recentLapses != rhs.recentLapses {
                     return lhs.recentLapses > rhs.recentLapses
@@ -459,12 +465,23 @@ enum AdaptiveSessionPolicy {
                 return lhs.dueAt < rhs.dueAt
             }
 
+        let reintroducedCards = candidates
+            .filter { !$0.isNew && $0.isSuspended }
+            .sorted { lhs, rhs in
+                if lhs.recentLapses != rhs.recentLapses {
+                    return lhs.recentLapses > rhs.recentLapses
+                }
+                return lhs.dueAt < rhs.dueAt
+            }
+            .prefix(intakeForecast.reintroducedCardsToServe)
+
         let newCards = candidates
-            .filter(\.isNew)
+            .filter { $0.isNew && !$0.isSuspended }
             .orderedForNewCardIntroduction()
             .prefix(intakeForecast.newCardsToServe)
 
-        let selected = forceNewCards ? Array(newCards) + dueReviews : dueReviews + Array(newCards)
+        let intakeCards = Array(reintroducedCards) + Array(newCards)
+        let selected = forceNewCards ? intakeCards + dueReviews : dueReviews + intakeCards
         return SessionDecision(
             orderedCards: selected,
             shouldStopNaturally: selected.isEmpty
@@ -584,7 +601,9 @@ enum AdaptiveSessionPolicy {
         now: Date,
         forceNewCards: Bool = false
     ) -> NewCardIntakeForecast {
-        let availableNewCards = candidates.filter(\.isNew).count
+        let availableNewCards = candidates.filter { $0.isNew && !$0.isSuspended }.count
+        let availableReintroductionCards = candidates.filter { !$0.isNew && $0.isSuspended }.count
+        let availableIntakeCards = availableNewCards + availableReintroductionCards
         let workloadCandidates = loadCandidates ?? candidates
         let relearningDebt = relearningDebt(from: workloadCandidates, now: now)
         let forecastedReviewLoad = forecastedReviewLoad(from: workloadCandidates, now: now)
@@ -617,11 +636,19 @@ enum AdaptiveSessionPolicy {
             passLimit,
             dailyRemaining
         )
-        let newCardsToServe = min(max(0, allowance), availableNewCards)
+        let intakeCardsToServe = min(max(0, allowance), availableIntakeCards)
+        let reintroducedCardsToServe = min(intakeCardsToServe, availableReintroductionCards)
+        let newCardsToServe = min(
+            max(0, intakeCardsToServe - reintroducedCardsToServe),
+            availableNewCards
+        )
 
         return NewCardIntakeForecast(
             newCardsToServe: newCardsToServe,
+            reintroducedCardsToServe: reintroducedCardsToServe,
+            intakeCardsToServe: intakeCardsToServe,
             availableNewCards: availableNewCards,
+            availableReintroductionCards: availableReintroductionCards,
             forecastedReviewLoad: forecastedReviewLoad,
             relearningDebt: relearningDebt,
             reviewLoadBudget: pace.reviewLoadBudget,
@@ -636,8 +663,8 @@ enum AdaptiveSessionPolicy {
             newCardsStudiedToday: newCardsStudiedToday,
             dailyRemaining: dailyRemaining,
             limitingFactor: limitingFactor(
-                newCardsToServe: newCardsToServe,
-                availableNewCards: availableNewCards,
+                newCardsToServe: intakeCardsToServe,
+                availableNewCards: availableIntakeCards,
                 workloadAllowance: workloadAllowance,
                 passLimit: passLimit,
                 dailyRemaining: dailyRemaining
