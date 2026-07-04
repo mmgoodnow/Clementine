@@ -1066,6 +1066,50 @@ final class StudyDomainTests: XCTestCase {
         )
     }
 
+    func testFrictionCardsIncludeMoreThanNextSuspendBatch() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let frictionCards = (0..<50).map { index in
+            LoadSheddingCard(
+                id: UUID(),
+                cardKey: "struggling-\(index)",
+                noteSourceID: "struggling-\(index)",
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: false,
+                isSuspended: false
+            )
+        }
+        let stableCards = (0..<250).map { index in
+            LoadSheddingCard(
+                id: UUID(),
+                cardKey: "stable-\(index)",
+                noteSourceID: "stable-\(index)",
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: false,
+                isSuspended: false
+            )
+        }
+        let reviews = frictionCards.flatMap { card in
+            [
+                LoadSheddingReview(cardKey: card.cardKey, noteSourceID: card.noteSourceID, reviewedAt: now, grade: .again, wasCorrect: false),
+                LoadSheddingReview(cardKey: card.cardKey, noteSourceID: card.noteSourceID, reviewedAt: now.addingTimeInterval(-60), grade: .again, wasCorrect: false)
+            ]
+        }
+
+        let frictionIDs = LoadSheddingPolicy.frictionCardIDs(
+            cards: frictionCards + stableCards,
+            reviews: reviews,
+            now: now
+        )
+        let batchIDs = LoadSheddingPolicy.cardIDsToSuspend(
+            cards: frictionCards + stableCards,
+            reviews: reviews,
+            now: now
+        )
+
+        XCTAssertEqual(frictionIDs.count, 50)
+        XCTAssertEqual(batchIDs.count, 30)
+    }
+
     private func candidate(
         id: UUID,
         noteSourceID: String,

@@ -1161,7 +1161,7 @@ private struct ProgressViewContent: View {
                     )
                     ProgressMetric(
                         title: "Friction",
-                        value: "\(snapshot.loadSheddingCandidateCount)",
+                        value: "\(snapshot.frictionCardCount)",
                         systemImage: "exclamationmark.triangle"
                     )
                     ProgressMetric(
@@ -1175,7 +1175,7 @@ private struct ProgressViewContent: View {
                 Button {
                     reduceActiveLoad(snapshot.loadSheddingCandidateIDs)
                 } label: {
-                    Label("Reduce active load", systemImage: "tray.and.arrow.down")
+                    Label("Reduce active load (\(snapshot.loadSheddingCandidateCount))", systemImage: "tray.and.arrow.down")
                 }
                 .disabled(snapshot.loadSheddingCandidateCount == 0)
 
@@ -1334,6 +1334,11 @@ private struct ProgressViewContent: View {
             reviews: loadSheddingReviews,
             now: now
         )
+        let frictionCardIDs = LoadSheddingPolicy.frictionCardIDs(
+            cards: loadSheddingCards,
+            reviews: loadSheddingReviews,
+            now: now
+        )
         let resumeSuspendedCardIDs = cards
             .filter(\.isSuspended)
             .sorted {
@@ -1347,6 +1352,7 @@ private struct ProgressViewContent: View {
             introducedVocabularyCount: Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count,
             activeIntroducedCardCount: cards.filter { !$0.isSuspended && $0.fsrsCardData != nil }.count,
             suspendedCardCount: cards.filter(\.isSuspended).count,
+            frictionCardCount: frictionCardIDs.count,
             loadSheddingCandidateCount: loadSheddingCandidateIDs.count,
             loadSheddingCandidateIDs: loadSheddingCandidateIDs,
             resumeSuspendedCardIDs: resumeSuspendedCardIDs,
@@ -1556,6 +1562,7 @@ private struct ProgressSnapshot {
     var introducedVocabularyCount: Int
     var activeIntroducedCardCount: Int
     var suspendedCardCount: Int
+    var frictionCardCount: Int
     var loadSheddingCandidateCount: Int
     var loadSheddingCandidateIDs: [UUID]
     var resumeSuspendedCardIDs: [UUID]

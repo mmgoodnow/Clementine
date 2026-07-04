@@ -710,6 +710,17 @@ enum LoadSheddingPolicy {
         let targetCount = suspensionBatchSize(activeCount: activeIntroducedCards.count)
         guard targetCount > 0 else { return [] }
 
+        return frictionCardIDs(cards: cards, reviews: reviews, now: now)
+            .prefix(targetCount)
+            .map { $0 }
+    }
+
+    static func frictionCardIDs(
+        cards: [LoadSheddingCard],
+        reviews: [LoadSheddingReview],
+        now: Date
+    ) -> [UUID] {
+        let activeIntroducedCards = cards.filter { !$0.isNew && !$0.isSuspended }
         let groupedReviews = Dictionary(grouping: reviews, by: \.cardKey)
             .mapValues { $0.sorted { $0.reviewedAt > $1.reviewedAt } }
         let candidates = activeIntroducedCards.compactMap { card -> LoadSheddingCandidate? in
@@ -740,7 +751,6 @@ enum LoadSheddingPolicy {
                 if $0.card.dueAt != $1.card.dueAt { return $0.card.dueAt < $1.card.dueAt }
                 return $0.card.cardKey < $1.card.cardKey
             }
-            .prefix(targetCount)
             .map(\.card.id)
     }
 
