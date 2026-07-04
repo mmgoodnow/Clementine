@@ -536,7 +536,6 @@ struct ContentView: View {
                     responseSeconds: responseSeconds
                 )
             )
-            try modelContext.save()
             servingCounters.consumeReview(
                 cardID: card.id,
                 noteSourceID: note.sourceID,
@@ -548,6 +547,7 @@ struct ContentView: View {
             if advanceImmediately {
                 moveToNextCard()
             }
+            scheduleModelSave()
         } catch {
             isAnswerRevealed = true
         }
