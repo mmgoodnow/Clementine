@@ -346,14 +346,6 @@ struct ContentView: View {
         cards.filter(\.isSuspended).count
     }
 
-    private var loadSheddingCandidateIDs: [UUID] {
-        LoadSheddingPolicy.cardIDsToSuspend(
-            cards: loadSheddingCards,
-            reviews: loadSheddingReviews,
-            now: Date()
-        )
-    }
-
     private var loadSheddingCards: [LoadSheddingCard] {
         cards.map { card in
             LoadSheddingCard(
@@ -380,8 +372,8 @@ struct ContentView: View {
         }
     }
 
-    private func reduceActiveLoad() {
-        let idsToSuspend = Set(loadSheddingCandidateIDs)
+    private func reduceActiveLoad(_ cardIDs: [UUID]) {
+        let idsToSuspend = Set(cardIDs)
         guard !idsToSuspend.isEmpty else { return }
 
         let now = Date()
@@ -395,29 +387,34 @@ struct ContentView: View {
         if let activeCardID, idsToSuspend.contains(activeCardID) {
             self.activeCardID = nil
         }
-        moveToNextCard()
+        scheduleModelSave()
+        if selectedTab == .study {
+            moveToNextCard()
+        }
     }
 
-    private func resumeSuspendedCards() {
+    private func resumeSuspendedCards(_ cardIDs: [UUID]) {
+        let idsToResume = Set(cardIDs)
+        guard !idsToResume.isEmpty else { return }
+
         let now = Date()
-        let suspendedBatch = cards
-            .filter(\.isSuspended)
-            .sorted {
-                if $0.dueAt != $1.dueAt { return $0.dueAt < $1.dueAt }
-                return $0.cardKey < $1.cardKey
-            }
-            .prefix(12)
-
-        guard !suspendedBatch.isEmpty else { return }
-
-        for card in suspendedBatch {
+        for card in cards where idsToResume.contains(card.id) {
             card.isSuspended = false
             card.updatedAt = now
         }
 
-        try? modelContext.save()
         endServingPass()
-        moveToNextCard()
+        scheduleModelSave()
+        if selectedTab == .study {
+            moveToNextCard()
+        }
+    }
+
+    private func scheduleModelSave() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            try? modelContext.save()
+        }
     }
 
     private func choices(for card: StudyCard, note: VocabularyNote) -> [String] {
@@ -1077,8 +1074,8 @@ private struct ProgressViewContent: View {
     var cards: [StudyCard]
     var reviews: [ReviewEvent]
     var learningPace: LearningPace
-    var reduceActiveLoad: () -> Void
-    var resumeSuspendedCards: () -> Void
+    var reduceActiveLoad: ([UUID]) -> Void
+    var resumeSuspendedCards: ([UUID]) -> Void
 
     var body: some View {
         let snapshot = progressSnapshot
@@ -1176,7 +1173,7 @@ private struct ProgressViewContent: View {
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
 
                 Button {
-                    reduceActiveLoad()
+                    reduceActiveLoad(snapshot.loadSheddingCandidateIDs)
                 } label: {
                     Label("Reduce active load", systemImage: "tray.and.arrow.down")
                 }
@@ -1184,10 +1181,11 @@ private struct ProgressViewContent: View {
 
                 if snapshot.suspendedCardCount > 0 {
                     Button {
-                        resumeSuspendedCards()
+                        resumeSuspendedCards(snapshot.resumeSuspendedCardIDs)
                     } label: {
                         Label("Resume 12 suspended", systemImage: "arrow.uturn.up")
                     }
+                    .disabled(snapshot.resumeSuspendedCardIDs.isEmpty)
                 }
             }
 
@@ -1331,17 +1329,27 @@ private struct ProgressViewContent: View {
             ),
             now: now
         )
-        let loadSheddingCandidateCount = LoadSheddingPolicy.cardIDsToSuspend(
+        let loadSheddingCandidateIDs = LoadSheddingPolicy.cardIDsToSuspend(
             cards: loadSheddingCards,
             reviews: loadSheddingReviews,
             now: now
-        ).count
+        )
+        let resumeSuspendedCardIDs = cards
+            .filter(\.isSuspended)
+            .sorted {
+                if $0.dueAt != $1.dueAt { return $0.dueAt < $1.dueAt }
+                return $0.cardKey < $1.cardKey
+            }
+            .prefix(12)
+            .map(\.id)
 
         return ProgressSnapshot(
             introducedVocabularyCount: Set(reviews.map(\.noteSourceID).filter { !$0.isEmpty }).count,
             activeIntroducedCardCount: cards.filter { !$0.isSuspended && $0.fsrsCardData != nil }.count,
             suspendedCardCount: cards.filter(\.isSuspended).count,
-            loadSheddingCandidateCount: loadSheddingCandidateCount,
+            loadSheddingCandidateCount: loadSheddingCandidateIDs.count,
+            loadSheddingCandidateIDs: loadSheddingCandidateIDs,
+            resumeSuspendedCardIDs: resumeSuspendedCardIDs,
             intakeForecast: intakeForecast,
             reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: candidates, now: now),
             introducedVocabularyPoints: introducedVocabularyPoints,
@@ -1549,6 +1557,8 @@ private struct ProgressSnapshot {
     var activeIntroducedCardCount: Int
     var suspendedCardCount: Int
     var loadSheddingCandidateCount: Int
+    var loadSheddingCandidateIDs: [UUID]
+    var resumeSuspendedCardIDs: [UUID]
     var intakeForecast: NewCardIntakeForecast
     var reviewLoadForecast: [ReviewLoadForecastDay]
     var introducedVocabularyPoints: [VocabularyPoint]
