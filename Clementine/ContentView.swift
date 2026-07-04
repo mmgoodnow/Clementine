@@ -3,6 +3,29 @@ import Charts
 import SwiftData
 import SwiftUI
 
+private struct MoveToNextCardTiming {
+    var candidatesMilliseconds = 0
+    var historyMilliseconds = 0
+    var decisionMilliseconds = 0
+    var selectionMilliseconds = 0
+    var stateMilliseconds = 0
+    var totalMilliseconds = 0
+}
+
+private enum PerformanceTimingSummary {
+    static func review(
+        totalMilliseconds: Int,
+        retentionMilliseconds: Int,
+        fsrsMilliseconds: Int,
+        mutationMilliseconds: Int,
+        counterMilliseconds: Int,
+        moveTiming: MoveToNextCardTiming,
+        saveQueueMilliseconds: Int
+    ) -> String {
+        "tap \(totalMilliseconds)ms · retention \(retentionMilliseconds) · fsrs \(fsrsMilliseconds) · mutate \(mutationMilliseconds) · counters \(counterMilliseconds) · next \(moveTiming.totalMilliseconds) [candidates \(moveTiming.candidatesMilliseconds), history \(moveTiming.historyMilliseconds), policy \(moveTiming.decisionMilliseconds), select \(moveTiming.selectionMilliseconds), state \(moveTiming.stateMilliseconds)] · save queue \(saveQueueMilliseconds)"
+    }
+}
+
 struct ContentView: View {
     var seedError: Error?
 
@@ -26,8 +49,8 @@ struct ContentView: View {
     @State private var recentNoteSourceIDs: [String] = []
     @State private var servingCounters = ServingCounters()
     @State private var servingPlannedCardIDs: Set<UUID> = []
-    @State private var hasLivePlanChanged = false
     @State private var isServingPassActive = false
+    @State private var lastGradeTimingSummary: String?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -178,18 +201,6 @@ struct ContentView: View {
                 .filter { !$0.isEmpty }
         )
         let unseenVocabularyCount = notes.filter { !introducedNoteSourceIDs.contains($0.sourceID) }.count
-        let now = Date()
-        let duplicateCount = cards.filter {
-            !$0.isSuspended && $0.cardKey == activeCard.cardKey
-        }.count
-        let lastGrade = lastGrade(for: activeCard)
-        let explanation = CardSelectionExplainer.explanation(
-            isNew: activeCard.fsrsCardData == nil,
-            dueAt: activeCard.dueAt,
-            duplicateCount: duplicateCount,
-            lastGrade: lastGrade,
-            now: now
-        )
         let interactionMode = activeInteractionMode ?? interactionMode(for: activeCard)
 
         return .card(
@@ -202,10 +213,8 @@ struct ContentView: View {
                 servingCount: servingCounters.total,
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
-                plannedServingCount: servingCounters.plannedTotal,
-                hasLivePlanChanged: hasLivePlanChanged,
                 unseenVocabularyCount: unseenVocabularyCount,
-                explanation: explanation
+                debugTimingSummary: lastGradeTimingSummary
             )
         )
     }
@@ -223,7 +232,9 @@ struct ContentView: View {
         }
     }
 
-    private func moveToNextCard(forceNewCards: Bool = false) {
+    @discardableResult
+    private func moveToNextCard(forceNewCards: Bool = false) -> MoveToNextCardTiming {
+        let totalStart = Date()
         if forceNewCards {
             endServingPass()
         } else if isServingPassActive, servingCounters.total <= 0 {
@@ -233,30 +244,41 @@ struct ContentView: View {
             activeChoiceSeed = UUID().uuidString
             selectedChoice = nil
             isAnswerRevealed = false
-            return
+            return MoveToNextCardTiming(totalMilliseconds: milliseconds(since: totalStart))
         }
 
         let now = Date()
+        let candidatesStart = Date()
         let candidates = sessionCandidates(includeSuspended: true)
         let loadCandidates = sessionCandidates(includeSuspended: true)
+        let candidatesMilliseconds = milliseconds(since: candidatesStart)
 
+        let historyStart = Date()
+        let historicalReviewLoad = self.historicalReviewLoadPerNewCard
+        let historyMilliseconds = milliseconds(since: historyStart)
+
+        let decisionStart = Date()
         let decision = AdaptiveSessionPolicy.chooseCards(
             from: candidates,
             loadCandidates: loadCandidates,
             pace: settings?.learningPace ?? .balanced,
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
-            historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
+            historicalReviewLoadPerNewCard: historicalReviewLoad,
             now: now,
             forceNewCards: forceNewCards
         )
+        let decisionMilliseconds = milliseconds(since: decisionStart)
 
+        let selectionStart = Date()
         let selectedCandidate = AdaptiveSessionPolicy.nextCandidate(
             from: decision.orderedCards,
             recentCardIDs: Array(recentCardIDs.suffix(3)),
             recentNoteSourceIDs: Array(recentNoteSourceIDs.suffix(2))
         )
+        let selectionMilliseconds = milliseconds(since: selectionStart)
 
+        let stateStart = Date()
         activeCardID = selectedCandidate?.id
         if let selectedCandidate,
            let selectedCard = cards.first(where: { $0.id == selectedCandidate.id }) {
@@ -285,6 +307,14 @@ struct ContentView: View {
         isAnswerRevealed = false
         responseStartedAt = now
         prepareSpeech(for: activeNote)
+        return MoveToNextCardTiming(
+            candidatesMilliseconds: candidatesMilliseconds,
+            historyMilliseconds: historyMilliseconds,
+            decisionMilliseconds: decisionMilliseconds,
+            selectionMilliseconds: selectionMilliseconds,
+            stateMilliseconds: milliseconds(since: stateStart),
+            totalMilliseconds: milliseconds(since: totalStart)
+        )
     }
 
     private func rememberShown(candidate: SessionCardCandidate) {
@@ -305,21 +335,18 @@ struct ContentView: View {
 
         if !servingPlannedCardIDs.contains(candidate.id) {
             servingPlannedCardIDs.insert(candidate.id)
-            hasLivePlanChanged = true
         }
     }
 
     private func endServingPass() {
         servingCounters = ServingCounters()
         servingPlannedCardIDs = []
-        hasLivePlanChanged = false
         isServingPassActive = false
     }
 
     private func startServingPass(with cards: [SessionCardCandidate]) {
         servingCounters = ServingCounters(cards: cards)
         servingPlannedCardIDs = Set(cards.map(\.id))
-        hasLivePlanChanged = false
         isServingPassActive = true
     }
 
@@ -514,14 +541,23 @@ struct ContentView: View {
         advanceImmediately: Bool = true
     ) {
         do {
+            let totalStart = Date()
             let now = Date()
             let wasServingNewCard = card.fsrsCardData == nil
+            let retentionStart = Date()
+            let desiredRetention = currentDesiredRetention(now: now)
+            let retentionMilliseconds = milliseconds(since: retentionStart)
+
+            let fsrsStart = Date()
             let review = try FSRSReviewScheduler.review(
                 cardData: card.fsrsCardData,
                 grade: grade,
-                desiredRetention: currentDesiredRetention(now: now),
+                desiredRetention: desiredRetention,
                 now: now
             )
+            let fsrsMilliseconds = milliseconds(since: fsrsStart)
+
+            let mutationStart = Date()
             card.fsrsCardData = review.cardData
             card.dueAt = review.dueAt
             card.updatedAt = now
@@ -536,6 +572,9 @@ struct ContentView: View {
                     responseSeconds: responseSeconds
                 )
             )
+            let mutationMilliseconds = milliseconds(since: mutationStart)
+
+            let counterStart = Date()
             servingCounters.consumeReview(
                 cardID: card.id,
                 noteSourceID: note.sourceID,
@@ -544,13 +583,32 @@ struct ContentView: View {
                 scheduledDueAt: review.dueAt,
                 now: now
             )
+            let counterMilliseconds = milliseconds(since: counterStart)
+            let moveTiming: MoveToNextCardTiming
             if advanceImmediately {
-                moveToNextCard()
+                moveTiming = moveToNextCard()
+            } else {
+                moveTiming = MoveToNextCardTiming()
             }
+            let saveStart = Date()
             scheduleModelSave()
+            let saveQueueMilliseconds = milliseconds(since: saveStart)
+            lastGradeTimingSummary = PerformanceTimingSummary.review(
+                totalMilliseconds: milliseconds(since: totalStart),
+                retentionMilliseconds: retentionMilliseconds,
+                fsrsMilliseconds: fsrsMilliseconds,
+                mutationMilliseconds: mutationMilliseconds,
+                counterMilliseconds: counterMilliseconds,
+                moveTiming: moveTiming,
+                saveQueueMilliseconds: saveQueueMilliseconds
+            )
         } catch {
             isAnswerRevealed = true
         }
+    }
+
+    private func milliseconds(since start: Date) -> Int {
+        Int((Date().timeIntervalSince(start) * 1_000).rounded())
     }
 
     private func scheduleMultipleChoiceAdvance(cardID: UUID, selectedAnswer: String, wasCorrect: Bool) {
@@ -632,10 +690,8 @@ private struct StudyPrompt {
     var servingCount: Int
     var servingNewCount: Int
     var servingReviewCount: Int
-    var plannedServingCount: Int
-    var hasLivePlanChanged: Bool
     var unseenVocabularyCount: Int
-    var explanation: CardSelectionExplanation
+    var debugTimingSummary: String?
 }
 
 private struct StudyView: View {
@@ -684,10 +740,8 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
-                plannedServingCount: prompt.plannedServingCount,
-                hasLivePlanChanged: prompt.hasLivePlanChanged,
                 unseenVocabularyCount: prompt.unseenVocabularyCount,
-                explanation: prompt.explanation
+                debugTimingSummary: prompt.debugTimingSummary
             )
 
             Spacer(minLength: 8)
@@ -736,10 +790,8 @@ private struct StudyStatusBar: View {
     var servingCount: Int
     var servingNewCount: Int
     var servingReviewCount: Int
-    var plannedServingCount: Int
-    var hasLivePlanChanged: Bool
     var unseenVocabularyCount: Int
-    var explanation: CardSelectionExplanation
+    var debugTimingSummary: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -748,26 +800,14 @@ private struct StudyStatusBar: View {
                 Spacer()
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
-                    Text(explanation.title)
-                        .fontWeight(.semibold)
-                    Text("·")
-                    Text(explanation.detail)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(explanation.title)
-                        .fontWeight(.semibold)
-                    Text(explanation.detail)
-                }
-            }
-
-            if hasLivePlanChanged {
-                Text("This pass started with \(plannedServingCount); \(servingCount) remain after completed cards and returned reviews.")
-                    .font(.caption)
+            #if DEBUG
+            if let debugTimingSummary {
+                Text(debugTimingSummary)
+                    .font(.caption2.monospaced())
                     .foregroundStyle(.tertiary)
+                    .textSelection(.enabled)
             }
+            #endif
         }
         .font(.callout)
         .foregroundStyle(.secondary)
