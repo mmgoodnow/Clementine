@@ -51,7 +51,11 @@ struct ContentView: View {
                     notes: notes,
                     cards: cards,
                     reviews: reviews,
-                    learningPace: settings?.learningPace ?? .balanced
+                    learningPace: settings?.learningPace ?? .balanced,
+                    suspendedCardCount: suspendedCardCount,
+                    loadSheddingCandidateCount: loadSheddingCandidateIDs.count,
+                    reduceActiveLoad: reduceActiveLoad,
+                    resumeSuspendedCards: resumeSuspendedCards
                 )
             }
             .tabItem { Label("Progress", systemImage: "chart.bar") }
@@ -335,9 +339,87 @@ struct ContentView: View {
 
     private func recentLapses(for cardKey: String) -> Int {
         reviews
-            .prefix(30)
             .filter { $0.cardKey == cardKey && $0.gradeRaw == ReviewGrade.again.rawValue }
+            .prefix(12)
             .count
+    }
+
+    private var suspendedCardCount: Int {
+        cards.filter(\.isSuspended).count
+    }
+
+    private var loadSheddingCandidateIDs: [UUID] {
+        LoadSheddingPolicy.cardIDsToSuspend(
+            cards: loadSheddingCards,
+            reviews: loadSheddingReviews,
+            now: Date()
+        )
+    }
+
+    private var loadSheddingCards: [LoadSheddingCard] {
+        cards.map { card in
+            LoadSheddingCard(
+                id: card.id,
+                cardKey: card.cardKey,
+                noteSourceID: card.noteSourceID,
+                dueAt: card.dueAt,
+                isNew: card.fsrsCardData == nil,
+                isSuspended: card.isSuspended
+            )
+        }
+    }
+
+    private var loadSheddingReviews: [LoadSheddingReview] {
+        reviews.compactMap { review in
+            guard let grade = ReviewGrade(rawValue: review.gradeRaw) else { return nil }
+            return LoadSheddingReview(
+                cardKey: review.cardKey,
+                noteSourceID: review.noteSourceID,
+                reviewedAt: review.reviewedAt,
+                grade: grade,
+                wasCorrect: review.wasCorrect
+            )
+        }
+    }
+
+    private func reduceActiveLoad() {
+        let idsToSuspend = Set(loadSheddingCandidateIDs)
+        guard !idsToSuspend.isEmpty else { return }
+
+        let now = Date()
+        for card in cards where idsToSuspend.contains(card.id) {
+            card.isSuspended = true
+            card.updatedAt = now
+        }
+
+        try? modelContext.save()
+        endServingPass()
+        if let activeCardID, idsToSuspend.contains(activeCardID) {
+            self.activeCardID = nil
+        }
+        moveToNextCard()
+    }
+
+    private func resumeSuspendedCards() {
+        let now = Date()
+        let suspendedBatch = cards
+            .filter(\.isSuspended)
+            .sorted {
+                if $0.dueAt != $1.dueAt { return $0.dueAt < $1.dueAt }
+                return $0.cardKey < $1.cardKey
+            }
+            .prefix(12)
+
+        guard !suspendedBatch.isEmpty else { return }
+
+        for card in suspendedBatch {
+            card.isSuspended = false
+            card.updatedAt = now
+        }
+
+        try? modelContext.save()
+        endServingPass()
+        moveToNextCard()
     }
 
     private func choices(for card: StudyCard, note: VocabularyNote) -> [String] {
@@ -997,6 +1079,10 @@ private struct ProgressViewContent: View {
     var cards: [StudyCard]
     var reviews: [ReviewEvent]
     var learningPace: LearningPace
+    var suspendedCardCount: Int
+    var loadSheddingCandidateCount: Int
+    var reduceActiveLoad: () -> Void
+    var resumeSuspendedCards: () -> Void
 
     var body: some View {
         List {
@@ -1034,6 +1120,12 @@ private struct ProgressViewContent: View {
                             title: "Review budget",
                             value: "\(intakeForecast.forecastedReviewLoad) / \(intakeForecast.reviewLoadBudget)"
                         )
+                        if intakeForecast.relearningDebt > 0 {
+                            ForecastRow(
+                                title: "Relearning debt",
+                                value: "+\(intakeForecast.relearningDebt)"
+                            )
+                        }
                         ForecastRow(
                             title: "Available review room",
                             value: "\(intakeForecast.availableReviewBudget)"
@@ -1060,6 +1152,46 @@ private struct ProgressViewContent: View {
                             title: "Today",
                             value: "\(intakeForecast.newCardsStudiedToday) / \(intakeForecast.dayLimit) new"
                         )
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
+            Section("Active Load") {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 14) {
+                        ProgressMetric(
+                            title: "Active",
+                            value: "\(activeIntroducedCardCount)",
+                            systemImage: "tray.full"
+                        )
+                        ProgressMetric(
+                            title: "Friction",
+                            value: "\(loadSheddingCandidateCount)",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                        ProgressMetric(
+                            title: "Suspended",
+                            value: "\(suspendedCardCount)",
+                            systemImage: "pause.circle"
+                        )
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            reduceActiveLoad()
+                        } label: {
+                            Label("Reduce active load", systemImage: "tray.and.arrow.down")
+                        }
+                        .disabled(loadSheddingCandidateCount == 0)
+
+                        if suspendedCardCount > 0 {
+                            Button {
+                                resumeSuspendedCards()
+                            } label: {
+                                Label("Resume 12 suspended", systemImage: "arrow.uturn.up")
+                            }
+                        }
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
@@ -1197,11 +1329,22 @@ private struct ProgressViewContent: View {
                     id: card.id,
                     dueAt: card.dueAt,
                     isNew: card.fsrsCardData == nil,
-                    recentLapses: 0,
+                    recentLapses: recentLapses(for: card.cardKey),
                     noteSourceID: card.noteSourceID,
                     kind: card.kind
                 )
             }
+    }
+
+    private var activeIntroducedCardCount: Int {
+        cards.filter { !$0.isSuspended && $0.fsrsCardData != nil }.count
+    }
+
+    private func recentLapses(for cardKey: String) -> Int {
+        reviews
+            .filter { $0.cardKey == cardKey && $0.gradeRaw == ReviewGrade.again.rawValue }
+            .prefix(12)
+            .count
     }
 
     private var recentAccuracy: Double {

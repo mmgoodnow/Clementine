@@ -230,6 +230,23 @@ struct ReviewHistoryEvent: Equatable {
     }
 }
 
+struct LoadSheddingCard: Equatable {
+    var id: UUID
+    var cardKey: String
+    var noteSourceID: String
+    var dueAt: Date
+    var isNew: Bool
+    var isSuspended: Bool
+}
+
+struct LoadSheddingReview: Equatable {
+    var cardKey: String
+    var noteSourceID: String
+    var reviewedAt: Date
+    var grade: ReviewGrade
+    var wasCorrect: Bool
+}
+
 struct NewCardIntakeForecast: Equatable {
     enum LimitingFactor: String, Equatable {
         case reviewBudget = "Review budget"
@@ -242,6 +259,7 @@ struct NewCardIntakeForecast: Equatable {
     var newCardsToServe: Int
     var availableNewCards: Int
     var forecastedReviewLoad: Int
+    var relearningDebt: Int
     var reviewLoadBudget: Int
     var availableReviewBudget: Int
     var recentAccuracy: Double
@@ -481,9 +499,18 @@ enum AdaptiveSessionPolicy {
 
     static func forecastedReviewLoad(from candidates: [SessionCardCandidate], now: Date) -> Int {
         let horizonEnd = Calendar.current.date(byAdding: .day, value: forecastHorizonDays, to: now) ?? now
-        return candidates.filter {
+        let scheduledLoad = candidates.filter {
             !$0.isNew && $0.dueAt <= horizonEnd
         }.count
+        return scheduledLoad + relearningDebt(from: candidates, now: now)
+    }
+
+    static func relearningDebt(from candidates: [SessionCardCandidate], now: Date) -> Int {
+        candidates
+            .filter { !$0.isNew && $0.dueAt <= now }
+            .reduce(0) { total, candidate in
+                total + relearningDebt(forRecentLapses: candidate.recentLapses)
+            }
     }
 
     static func reviewLoadForecastByDay(from candidates: [SessionCardCandidate], now: Date) -> [ReviewLoadForecastDay] {
@@ -555,6 +582,7 @@ enum AdaptiveSessionPolicy {
         forceNewCards: Bool = false
     ) -> NewCardIntakeForecast {
         let availableNewCards = candidates.filter(\.isNew).count
+        let relearningDebt = relearningDebt(from: candidates, now: now)
         let forecastedReviewLoad = forecastedReviewLoad(from: candidates, now: now)
         let availableLoad = max(0, pace.reviewLoadBudget - forecastedReviewLoad)
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
@@ -591,6 +619,7 @@ enum AdaptiveSessionPolicy {
             newCardsToServe: newCardsToServe,
             availableNewCards: availableNewCards,
             forecastedReviewLoad: forecastedReviewLoad,
+            relearningDebt: relearningDebt,
             reviewLoadBudget: pace.reviewLoadBudget,
             availableReviewBudget: availableLoad,
             recentAccuracy: recentAccuracy,
@@ -641,6 +670,11 @@ enum AdaptiveSessionPolicy {
         return max(2.0, ceil(expectedReviewCost * retentionPressure * 3.5))
     }
 
+    private static func relearningDebt(forRecentLapses recentLapses: Int) -> Int {
+        guard recentLapses > 0 else { return 0 }
+        return min(12, recentLapses * 3)
+    }
+
     private static func limitingFactor(
         newCardsToServe: Int,
         availableNewCards: Int,
@@ -664,6 +698,60 @@ enum AdaptiveSessionPolicy {
     private static func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
         min(max(value, lowerBound), upperBound)
     }
+}
+
+enum LoadSheddingPolicy {
+    static func cardIDsToSuspend(
+        cards: [LoadSheddingCard],
+        reviews: [LoadSheddingReview],
+        now: Date
+    ) -> [UUID] {
+        let activeIntroducedCards = cards.filter { !$0.isNew && !$0.isSuspended }
+        let targetCount = suspensionBatchSize(activeCount: activeIntroducedCards.count)
+        guard targetCount > 0 else { return [] }
+
+        let groupedReviews = Dictionary(grouping: reviews, by: \.cardKey)
+        let candidates = activeIntroducedCards.compactMap { card -> LoadSheddingCandidate? in
+            let cardReviews = (groupedReviews[card.cardKey] ?? []).sorted { $0.reviewedAt > $1.reviewedAt }
+            let recentReviews = Array(cardReviews.prefix(12))
+            let reviewCount = recentReviews.count
+            let againCount = recentReviews.filter { $0.grade == .again }.count
+            guard reviewCount >= 2, againCount > 0 else { return nil }
+
+            let correctCount = recentReviews.filter(\.wasCorrect).count
+            let accuracy = Double(correctCount) / Double(reviewCount)
+            let lastReviewedAt = recentReviews.first?.reviewedAt ?? card.dueAt
+            let ageDays = max(0, now.timeIntervalSince(lastReviewedAt) / (24 * 60 * 60))
+            let recencyPressure = max(0, 7 - ageDays) / 7
+            let duePressure = card.dueAt <= now ? 1.0 : 0.0
+            let score = Double(againCount) * 8
+                + (1 - accuracy) * 6
+                + Double(reviewCount) * 0.5
+                + recencyPressure * 2
+                + duePressure
+
+            return LoadSheddingCandidate(card: card, score: score)
+        }
+
+        return candidates
+            .sorted {
+                if $0.score != $1.score { return $0.score > $1.score }
+                if $0.card.dueAt != $1.card.dueAt { return $0.card.dueAt < $1.card.dueAt }
+                return $0.card.cardKey < $1.card.cardKey
+            }
+            .prefix(targetCount)
+            .map(\.card.id)
+    }
+
+    static func suspensionBatchSize(activeCount: Int) -> Int {
+        guard activeCount >= 12 else { return 0 }
+        return min(40, max(12, activeCount / 10))
+    }
+}
+
+private struct LoadSheddingCandidate {
+    var card: LoadSheddingCard
+    var score: Double
 }
 
 private extension Array where Element == SessionCardCandidate {

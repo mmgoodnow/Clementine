@@ -732,6 +732,64 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(forecast.newCardsToServe, forecast.passLimit)
     }
 
+    func testRelearningDebtConsumesReviewBudgetForNewCardIntake() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let relearningReviews = (0..<LearningPace.low.reviewLoadBudget / 4).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(-index - 1) * 60),
+                isNew: false,
+                recentLapses: 4
+            )
+        }
+        let newCards = (0..<80).map { index in
+            SessionCardCandidate(
+                id: UUID(),
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: true,
+                recentLapses: 0
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: relearningReviews + newCards,
+            pace: .low,
+            recentAccuracy: 0.55,
+            now: now
+        )
+
+        XCTAssertGreaterThan(forecast.relearningDebt, 0)
+        XCTAssertEqual(forecast.forecastedReviewLoad, relearningReviews.count + forecast.relearningDebt)
+        XCTAssertEqual(forecast.newCardsToServe, 0)
+        XCTAssertEqual(forecast.limitingFactor, .reviewBudget)
+    }
+
+    func testRelearningDebtOnlyPricesDueFailedCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let dueAgain = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now.addingTimeInterval(-60),
+            isNew: false,
+            recentLapses: 2
+        )
+        let futureAgain = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now.addingTimeInterval(60),
+            isNew: false,
+            recentLapses: 2
+        )
+
+        let forecast = AdaptiveSessionPolicy.newCardIntakeForecast(
+            from: [dueAgain, futureAgain],
+            pace: .balanced,
+            recentAccuracy: 0.8,
+            now: now
+        )
+
+        XCTAssertEqual(forecast.relearningDebt, 6)
+        XCTAssertEqual(forecast.forecastedReviewLoad, 8)
+    }
+
     func testHistoryEstimatedNewCardCostReducesReviewBudgetAllowance() {
         let now = Date(timeIntervalSince1970: 8 * 24 * 60 * 60)
         let newCards = (0..<700).map { index in
@@ -937,6 +995,75 @@ final class StudyDomainTests: XCTestCase {
         )
 
         XCTAssertEqual(decision.orderedCards.first, newCard)
+    }
+
+    func testLoadSheddingPrefersRepeatedAgainCards() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let stableID = UUID()
+        let strugglingID = UUID()
+        let activeCards = [
+            LoadSheddingCard(
+                id: stableID,
+                cardKey: "stable",
+                noteSourceID: "stable",
+                dueAt: now,
+                isNew: false,
+                isSuspended: false
+            ),
+            LoadSheddingCard(
+                id: strugglingID,
+                cardKey: "struggling",
+                noteSourceID: "struggling",
+                dueAt: now,
+                isNew: false,
+                isSuspended: false
+            )
+        ] + (0..<14).map { index in
+            LoadSheddingCard(
+                id: UUID(),
+                cardKey: "filler-\(index)",
+                noteSourceID: "filler-\(index)",
+                dueAt: now.addingTimeInterval(Double(index)),
+                isNew: false,
+                isSuspended: false
+            )
+        }
+        let reviews = [
+            LoadSheddingReview(cardKey: "stable", noteSourceID: "stable", reviewedAt: now, grade: .good, wasCorrect: true),
+            LoadSheddingReview(cardKey: "stable", noteSourceID: "stable", reviewedAt: now.addingTimeInterval(-60), grade: .easy, wasCorrect: true),
+            LoadSheddingReview(cardKey: "struggling", noteSourceID: "struggling", reviewedAt: now, grade: .again, wasCorrect: false),
+            LoadSheddingReview(cardKey: "struggling", noteSourceID: "struggling", reviewedAt: now.addingTimeInterval(-60), grade: .again, wasCorrect: false),
+            LoadSheddingReview(cardKey: "struggling", noteSourceID: "struggling", reviewedAt: now.addingTimeInterval(-120), grade: .hard, wasCorrect: true)
+        ]
+
+        let ids = LoadSheddingPolicy.cardIDsToSuspend(
+            cards: activeCards,
+            reviews: reviews,
+            now: now
+        )
+
+        XCTAssertTrue(ids.contains(strugglingID))
+        XCTAssertFalse(ids.contains(stableID))
+    }
+
+    func testLoadSheddingDoesNotSuspendTinyActiveSets() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let card = LoadSheddingCard(
+            id: UUID(),
+            cardKey: "struggling",
+            noteSourceID: "struggling",
+            dueAt: now,
+            isNew: false,
+            isSuspended: false
+        )
+        let reviews = [
+            LoadSheddingReview(cardKey: "struggling", noteSourceID: "struggling", reviewedAt: now, grade: .again, wasCorrect: false),
+            LoadSheddingReview(cardKey: "struggling", noteSourceID: "struggling", reviewedAt: now.addingTimeInterval(-60), grade: .again, wasCorrect: false)
+        ]
+
+        XCTAssertTrue(
+            LoadSheddingPolicy.cardIDsToSuspend(cards: [card], reviews: reviews, now: now).isEmpty
+        )
     }
 
     private func candidate(
