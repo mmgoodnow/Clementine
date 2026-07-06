@@ -3,27 +3,26 @@ import Charts
 import SwiftData
 import SwiftUI
 
-private struct MoveToNextCardTiming {
-    var candidatesMilliseconds = 0
-    var historyMilliseconds = 0
-    var decisionMilliseconds = 0
-    var selectionMilliseconds = 0
-    var stateMilliseconds = 0
-    var totalMilliseconds = 0
-}
+#if os(iOS)
+import UIKit
+#endif
 
-private enum PerformanceTimingSummary {
-    static func review(
-        totalMilliseconds: Int,
-        retentionMilliseconds: Int,
-        fsrsMilliseconds: Int,
-        mutationMilliseconds: Int,
-        counterMilliseconds: Int,
-        moveTiming: MoveToNextCardTiming,
-        saveQueueMilliseconds: Int
-    ) -> String {
-        "tap \(totalMilliseconds)ms · retention \(retentionMilliseconds) · fsrs \(fsrsMilliseconds) · mutate \(mutationMilliseconds) · counters \(counterMilliseconds) · next \(moveTiming.totalMilliseconds) [candidates \(moveTiming.candidatesMilliseconds), history \(moveTiming.historyMilliseconds), policy \(moveTiming.decisionMilliseconds), select \(moveTiming.selectionMilliseconds), state \(moveTiming.stateMilliseconds)] · save queue \(saveQueueMilliseconds)"
-    }
+private struct ReviewUndoState {
+    var cardID: UUID
+    var previousCardData: Data?
+    var previousDueAt: Date
+    var previousUpdatedAt: Date
+    var previousIsSuspended: Bool
+    var reviewEvent: ReviewEvent
+    var servingCounters: ServingCounters
+    var servingPlannedCardIDs: Set<UUID>
+    var isServingPassActive: Bool
+    var activeCardID: UUID?
+    var activeInteractionMode: StudyInteractionMode?
+    var activeChoiceSeed: String
+    var selectedChoice: String?
+    var isAnswerRevealed: Bool
+    var responseStartedAt: Date
 }
 
 struct ContentView: View {
@@ -50,7 +49,7 @@ struct ContentView: View {
     @State private var servingCounters = ServingCounters()
     @State private var servingPlannedCardIDs: Set<UUID> = []
     @State private var isServingPassActive = false
-    @State private var lastGradeTimingSummary: String?
+    @State private var lastReviewUndo: ReviewUndoState?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -106,6 +105,17 @@ struct ContentView: View {
         .onChange(of: activeCardID) { _, _ in
             prepareSpeech(for: activeNote)
         }
+        .background(shakeUndoDetector)
+    }
+
+    @ViewBuilder
+    private var shakeUndoDetector: some View {
+        #if os(iOS)
+        ShakeDetector(onShake: undoLastReview)
+            .allowsHitTesting(false)
+        #else
+        EmptyView()
+        #endif
     }
 
     private var settings: UserSettings? {
@@ -216,8 +226,7 @@ struct ContentView: View {
                 servingCount: servingCounters.total,
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
-                unseenVocabularyCount: unseenVocabularyCount,
-                debugTimingSummary: lastGradeTimingSummary
+                unseenVocabularyCount: unseenVocabularyCount
             )
         )
     }
@@ -235,9 +244,7 @@ struct ContentView: View {
         }
     }
 
-    @discardableResult
-    private func moveToNextCard(forceNewCards: Bool = false) -> MoveToNextCardTiming {
-        let totalStart = Date()
+    private func moveToNextCard(forceNewCards: Bool = false) {
         if forceNewCards {
             endServingPass()
         } else if isServingPassActive, servingCounters.total <= 0 {
@@ -247,23 +254,17 @@ struct ContentView: View {
             activeChoiceSeed = UUID().uuidString
             selectedChoice = nil
             isAnswerRevealed = false
-            return MoveToNextCardTiming(totalMilliseconds: milliseconds(since: totalStart))
+            return
         }
 
         let now = Date()
-        let candidatesStart = Date()
         let recentAgainCounts = recentAgainCountsByCardKey
         let candidates = sessionCandidates(
             includeSuspended: true,
             recentAgainCounts: recentAgainCounts
         )
-        let candidatesMilliseconds = milliseconds(since: candidatesStart)
-
-        let historyStart = Date()
         let historicalReviewLoad = self.historicalReviewLoadPerNewCard
-        let historyMilliseconds = milliseconds(since: historyStart)
 
-        let decisionStart = Date()
         let decision = AdaptiveSessionPolicy.chooseCards(
             from: candidates,
             loadCandidates: candidates,
@@ -274,17 +275,13 @@ struct ContentView: View {
             now: now,
             forceNewCards: forceNewCards
         )
-        let decisionMilliseconds = milliseconds(since: decisionStart)
 
-        let selectionStart = Date()
         let selectedCandidate = AdaptiveSessionPolicy.nextCandidate(
             from: decision.orderedCards,
             recentCardIDs: Array(recentCardIDs.suffix(3)),
             recentNoteSourceIDs: Array(recentNoteSourceIDs.suffix(2))
         )
-        let selectionMilliseconds = milliseconds(since: selectionStart)
 
-        let stateStart = Date()
         activeCardID = selectedCandidate?.id
         if let selectedCandidate,
            let selectedCard = cards.first(where: { $0.id == selectedCandidate.id }) {
@@ -313,14 +310,6 @@ struct ContentView: View {
         isAnswerRevealed = false
         responseStartedAt = now
         prepareSpeech(for: activeNote)
-        return MoveToNextCardTiming(
-            candidatesMilliseconds: candidatesMilliseconds,
-            historyMilliseconds: historyMilliseconds,
-            decisionMilliseconds: decisionMilliseconds,
-            selectionMilliseconds: selectionMilliseconds,
-            stateMilliseconds: milliseconds(since: stateStart),
-            totalMilliseconds: milliseconds(since: totalStart)
-        )
     }
 
     private func rememberShown(candidate: SessionCardCandidate) {
@@ -554,10 +543,8 @@ struct ContentView: View {
         advanceImmediately: Bool = true
     ) {
         do {
-            let totalStart = Date()
             let now = Date()
             let wasServingNewCard = card.fsrsCardData == nil
-            let retentionStart = Date()
             let retentionCandidates = sessionCandidates(
                 includeSuspended: true,
                 recentAgainCounts: recentAgainCountsByCardKey
@@ -566,35 +553,47 @@ struct ContentView: View {
                 now: now,
                 candidates: retentionCandidates
             )
-            let retentionMilliseconds = milliseconds(since: retentionStart)
 
-            let fsrsStart = Date()
             let review = try FSRSReviewScheduler.review(
                 cardData: card.fsrsCardData,
                 grade: grade,
                 desiredRetention: desiredRetention,
                 now: now
             )
-            let fsrsMilliseconds = milliseconds(since: fsrsStart)
+            let reviewEvent = ReviewEvent(
+                cardKey: card.cardKey,
+                noteSourceID: note.sourceID,
+                grade: grade,
+                interaction: interaction,
+                reviewedAt: now,
+                wasCorrect: wasCorrect,
+                responseSeconds: responseSeconds
+            )
 
-            let mutationStart = Date()
+            lastReviewUndo = ReviewUndoState(
+                cardID: card.id,
+                previousCardData: card.fsrsCardData,
+                previousDueAt: card.dueAt,
+                previousUpdatedAt: card.updatedAt,
+                previousIsSuspended: card.isSuspended,
+                reviewEvent: reviewEvent,
+                servingCounters: servingCounters,
+                servingPlannedCardIDs: servingPlannedCardIDs,
+                isServingPassActive: isServingPassActive,
+                activeCardID: activeCardID,
+                activeInteractionMode: activeInteractionMode,
+                activeChoiceSeed: activeChoiceSeed,
+                selectedChoice: selectedChoice,
+                isAnswerRevealed: isAnswerRevealed,
+                responseStartedAt: responseStartedAt
+            )
+
             card.fsrsCardData = review.cardData
             card.dueAt = review.dueAt
             card.updatedAt = now
 
-            modelContext.insert(
-                ReviewEvent(
-                    cardKey: card.cardKey,
-                    noteSourceID: note.sourceID,
-                    grade: grade,
-                    interaction: interaction,
-                    wasCorrect: wasCorrect,
-                    responseSeconds: responseSeconds
-                )
-            )
-            let mutationMilliseconds = milliseconds(since: mutationStart)
+            modelContext.insert(reviewEvent)
 
-            let counterStart = Date()
             servingCounters.consumeReview(
                 cardID: card.id,
                 cardKey: card.cardKey,
@@ -604,32 +603,37 @@ struct ContentView: View {
                 scheduledDueAt: review.dueAt,
                 now: now
             )
-            let counterMilliseconds = milliseconds(since: counterStart)
-            let moveTiming: MoveToNextCardTiming
             if advanceImmediately {
-                moveTiming = moveToNextCard()
-            } else {
-                moveTiming = MoveToNextCardTiming()
+                moveToNextCard()
             }
-            let saveStart = Date()
             scheduleModelSave()
-            let saveQueueMilliseconds = milliseconds(since: saveStart)
-            lastGradeTimingSummary = PerformanceTimingSummary.review(
-                totalMilliseconds: milliseconds(since: totalStart),
-                retentionMilliseconds: retentionMilliseconds,
-                fsrsMilliseconds: fsrsMilliseconds,
-                mutationMilliseconds: mutationMilliseconds,
-                counterMilliseconds: counterMilliseconds,
-                moveTiming: moveTiming,
-                saveQueueMilliseconds: saveQueueMilliseconds
-            )
         } catch {
             isAnswerRevealed = true
         }
     }
 
-    private func milliseconds(since start: Date) -> Int {
-        Int((Date().timeIntervalSince(start) * 1_000).rounded())
+    private func undoLastReview() {
+        guard let undo = lastReviewUndo,
+              let card = cards.first(where: { $0.id == undo.cardID }) else { return }
+
+        card.fsrsCardData = undo.previousCardData
+        card.dueAt = undo.previousDueAt
+        card.updatedAt = undo.previousUpdatedAt
+        card.isSuspended = undo.previousIsSuspended
+        modelContext.delete(undo.reviewEvent)
+
+        servingCounters = undo.servingCounters
+        servingPlannedCardIDs = undo.servingPlannedCardIDs
+        isServingPassActive = undo.isServingPassActive
+        activeCardID = undo.activeCardID
+        activeInteractionMode = undo.activeInteractionMode
+        activeChoiceSeed = undo.activeChoiceSeed
+        selectedChoice = undo.selectedChoice
+        isAnswerRevealed = undo.isAnswerRevealed
+        responseStartedAt = undo.responseStartedAt
+        lastReviewUndo = nil
+        prepareSpeech(for: activeNote)
+        scheduleModelSave()
     }
 
     private func scheduleMultipleChoiceAdvance(cardID: UUID, selectedAnswer: String, wasCorrect: Bool) {
@@ -712,7 +716,6 @@ private struct StudyPrompt {
     var servingNewCount: Int
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
-    var debugTimingSummary: String?
 }
 
 private struct StudyView: View {
@@ -761,8 +764,7 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
-                unseenVocabularyCount: prompt.unseenVocabularyCount,
-                debugTimingSummary: prompt.debugTimingSummary
+                unseenVocabularyCount: prompt.unseenVocabularyCount
             )
 
             Spacer(minLength: 8)
@@ -812,7 +814,6 @@ private struct StudyStatusBar: View {
     var servingNewCount: Int
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
-    var debugTimingSummary: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -820,20 +821,48 @@ private struct StudyStatusBar: View {
                 Text("\(servingCount) live · \(servingNewCount) new · \(servingReviewCount) review · \(unseenVocabularyCount) unseen")
                 Spacer()
             }
-
-            #if DEBUG
-            if let debugTimingSummary {
-                Text(debugTimingSummary)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.tertiary)
-                    .textSelection(.enabled)
-            }
-            #endif
         }
         .font(.callout)
         .foregroundStyle(.secondary)
     }
 }
+
+#if os(iOS)
+private struct ShakeDetector: UIViewRepresentable {
+    var onShake: () -> Void
+
+    func makeUIView(context: Context) -> ShakeDetectingView {
+        let view = ShakeDetectingView()
+        view.onShake = onShake
+        DispatchQueue.main.async {
+            view.becomeFirstResponder()
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: ShakeDetectingView, context: Context) {
+        uiView.onShake = onShake
+        if !uiView.isFirstResponder {
+            DispatchQueue.main.async {
+                uiView.becomeFirstResponder()
+            }
+        }
+    }
+}
+
+private final class ShakeDetectingView: UIView {
+    var onShake: () -> Void = {}
+
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake else { return }
+        onShake()
+    }
+}
+#endif
 
 private struct MultipleChoiceControls: View {
     var prompt: StudyPrompt
