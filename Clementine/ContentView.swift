@@ -1569,7 +1569,11 @@ private struct ProgressViewContent: View {
             guard let card = introducedCardsBySourceID[sourceID] else { return nil }
             return IntroducedVocabularyEntry(
                 introducedDay: introducedDay,
-                bucket: IntroducedVocabularyDueBucket(dueAt: card.dueAt, now: now)
+                bucket: IntroducedVocabularyDueBucket(
+                    dueAt: card.dueAt,
+                    isSuspended: card.isSuspended,
+                    now: now
+                )
             )
         }
 
@@ -1718,50 +1722,58 @@ private struct IntroducedVocabularyEntry {
 }
 
 private enum IntroducedVocabularyDueBucket: String, CaseIterable {
-    case dueNow
-    case today
-    case oneToThreeDays
-    case fourToSevenDays
-    case oneToFourWeeks
-    case monthPlus
+    case due
+    case oneDay
+    case threeDays
+    case sevenDays
+    case fourWeeks
+    case distant
+    case suspended
 
-    init(dueAt: Date, now: Date) {
+    init(dueAt: Date, isSuspended: Bool, now: Date) {
+        if isSuspended {
+            self = .suspended
+            return
+        }
+
         let daysUntilDue = dueAt.timeIntervalSince(now) / (24 * 60 * 60)
         switch daysUntilDue {
         case ...0:
-            self = .dueNow
+            self = .due
         case ..<1:
-            self = .today
+            self = .oneDay
         case ..<4:
-            self = .oneToThreeDays
+            self = .threeDays
         case ..<8:
-            self = .fourToSevenDays
+            self = .sevenDays
         case ..<29:
-            self = .oneToFourWeeks
+            self = .fourWeeks
         default:
-            self = .monthPlus
+            self = .distant
         }
     }
 
     var label: String {
         switch self {
-        case .dueNow: "Due now"
-        case .today: "<1 day"
-        case .oneToThreeDays: "1-3 days"
-        case .fourToSevenDays: "4-7 days"
-        case .oneToFourWeeks: "1-4 weeks"
-        case .monthPlus: "1+ month"
+        case .due: "Due"
+        case .oneDay: "1 day"
+        case .threeDays: "3 days"
+        case .sevenDays: "7 days"
+        case .fourWeeks: "4 weeks"
+        case .distant: "Distant"
+        case .suspended: "Suspended"
         }
     }
 
     static var chartStyles: KeyValuePairs<String, Color> {
         [
-            "Due now": .red,
-            "<1 day": .orange,
-            "1-3 days": .yellow,
-            "4-7 days": .green,
-            "1-4 weeks": .teal,
-            "1+ month": .blue,
+            "Due": .red,
+            "1 day": .orange,
+            "3 days": .yellow,
+            "7 days": .green,
+            "4 weeks": .teal,
+            "Distant": .blue,
+            "Suspended": .gray,
         ]
     }
 }
