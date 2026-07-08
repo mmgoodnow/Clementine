@@ -4,6 +4,41 @@ import XCTest
 
 @MainActor
 final class SeedImporterTests: XCTestCase {
+    func testBadgeCountIncludesOnlyDueActiveReviewedCards() throws {
+        let container = try ClementineModelContainer.make(inMemory: true)
+        let context = container.mainContext
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let dueReviewedCard = StudyCard(
+            noteSourceID: "due",
+            kind: .hanziToMeaning,
+            dueAt: now.addingTimeInterval(-60),
+            fsrsCardData: Data([1])
+        )
+        let futureReviewedCard = StudyCard(
+            noteSourceID: "future",
+            kind: .hanziToMeaning,
+            dueAt: now.addingTimeInterval(60),
+            fsrsCardData: Data([1])
+        )
+        let unseenCard = StudyCard(
+            noteSourceID: "unseen",
+            kind: .hanziToMeaning,
+            dueAt: now.addingTimeInterval(-60)
+        )
+        let suspendedDueCard = StudyCard(
+            noteSourceID: "suspended",
+            kind: .hanziToMeaning,
+            dueAt: now.addingTimeInterval(-60),
+            fsrsCardData: Data([1])
+        )
+        suspendedDueCard.isSuspended = true
+
+        [dueReviewedCard, futureReviewedCard, unseenCard, suspendedDueCard].forEach(context.insert)
+
+        XCTAssertEqual(AppBadgeUpdater.dueReviewCount(context: context, now: now), 1)
+    }
+
     func testSeedImportIsIdempotentAndPreservesStableKeys() throws {
         let container = try ClementineModelContainer.make(inMemory: true)
         let context = container.mainContext

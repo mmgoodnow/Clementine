@@ -18,11 +18,20 @@ struct ClementineApp: App {
             RootBootstrapView()
         }
         .modelContainer(modelContainer)
+        #if os(iOS)
+        .backgroundTask(.appRefresh(AppBadgeUpdater.backgroundRefreshTaskIdentifier)) {
+            await AppBadgeUpdater.refreshBadge(modelContainer: modelContainer)
+            await MainActor.run {
+                AppBadgeUpdater.scheduleBackgroundRefresh()
+            }
+        }
+        #endif
     }
 }
 
 private struct RootBootstrapView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var seedError: Error?
 
     var body: some View {
@@ -33,6 +42,19 @@ private struct RootBootstrapView: View {
                     try SeedImporter.installIfNeeded(deck: deck, context: modelContext)
                 } catch {
                     seedError = error
+                }
+                _ = await AppBadgeUpdater.requestBadgeAuthorization()
+                await AppBadgeUpdater.refreshBadge(context: modelContext)
+                AppBadgeUpdater.scheduleBackgroundRefresh()
+            }
+            .task {
+                await AppBadgeUpdater.periodicRefresh(context: modelContext)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active || phase == .background else { return }
+                Task {
+                    await AppBadgeUpdater.refreshBadge(context: modelContext)
+                    AppBadgeUpdater.scheduleBackgroundRefresh()
                 }
             }
     }
