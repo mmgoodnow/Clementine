@@ -23,6 +23,13 @@ private struct ReviewUndoState {
     var selectedChoice: String?
     var isAnswerRevealed: Bool
     var responseStartedAt: Date
+    var previousLastReviewedSchedule: LastReviewedSchedule?
+}
+
+private struct LastReviewedSchedule: Equatable {
+    var hanzi: String
+    var pinyin: String
+    var intervalText: String
 }
 
 struct ContentView: View {
@@ -50,6 +57,7 @@ struct ContentView: View {
     @State private var servingPlannedCardIDs: Set<UUID> = []
     @State private var isServingPassActive = false
     @State private var lastReviewUndo: ReviewUndoState?
+    @State private var lastReviewedSchedule: LastReviewedSchedule?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -226,7 +234,8 @@ struct ContentView: View {
                 servingCount: servingCounters.total,
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
-                unseenVocabularyCount: unseenVocabularyCount
+                unseenVocabularyCount: unseenVocabularyCount,
+                lastReviewedSchedule: lastReviewedSchedule
             )
         )
     }
@@ -585,12 +594,18 @@ struct ContentView: View {
                 activeChoiceSeed: activeChoiceSeed,
                 selectedChoice: selectedChoice,
                 isAnswerRevealed: isAnswerRevealed,
-                responseStartedAt: responseStartedAt
+                responseStartedAt: responseStartedAt,
+                previousLastReviewedSchedule: lastReviewedSchedule
             )
 
             card.fsrsCardData = review.cardData
             card.dueAt = review.dueAt
             card.updatedAt = now
+            lastReviewedSchedule = LastReviewedSchedule(
+                hanzi: note.hanzi,
+                pinyin: note.pinyin,
+                intervalText: review.dueAt.scheduleIntervalText(from: now)
+            )
 
             modelContext.insert(reviewEvent)
 
@@ -631,6 +646,7 @@ struct ContentView: View {
         selectedChoice = undo.selectedChoice
         isAnswerRevealed = undo.isAnswerRevealed
         responseStartedAt = undo.responseStartedAt
+        lastReviewedSchedule = undo.previousLastReviewedSchedule
         lastReviewUndo = nil
         prepareSpeech(for: activeNote)
         scheduleModelSave()
@@ -716,6 +732,7 @@ private struct StudyPrompt {
     var servingNewCount: Int
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
+    var lastReviewedSchedule: LastReviewedSchedule?
 }
 
 private struct StudyView: View {
@@ -764,7 +781,8 @@ private struct StudyCardView: View {
                 servingCount: prompt.servingCount,
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
-                unseenVocabularyCount: prompt.unseenVocabularyCount
+                unseenVocabularyCount: prompt.unseenVocabularyCount,
+                lastReviewedSchedule: prompt.lastReviewedSchedule
             )
 
             Spacer(minLength: 8)
@@ -814,12 +832,19 @@ private struct StudyStatusBar: View {
     var servingNewCount: Int
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
+    var lastReviewedSchedule: LastReviewedSchedule?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Text("\(servingCount) live · \(servingNewCount) new · \(servingReviewCount) review · \(unseenVocabularyCount) unseen")
                 Spacer()
+            }
+            if let lastReviewedSchedule {
+                Text("\(lastReviewedSchedule.hanzi) · \(lastReviewedSchedule.pinyin) · \(lastReviewedSchedule.intervalText)")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .transition(.opacity)
             }
         }
         .font(.callout)
@@ -1801,6 +1826,36 @@ private struct ReviewMixSegment: Identifiable {
 private struct ReviewMixKey: Hashable {
     var day: Date
     var kind: String
+}
+
+private extension Date {
+    func scheduleIntervalText(from start: Date) -> String {
+        let seconds = timeIntervalSince(start)
+        guard seconds > 0 else { return "now" }
+
+        let minute: TimeInterval = 60
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+
+        switch seconds {
+        case ..<hour:
+            return Self.intervalText(value: Int(ceil(seconds / minute)), unit: "min")
+        case ..<day:
+            return Self.intervalText(value: Int(ceil(seconds / hour)), unit: "hour")
+        case ..<(week * 2):
+            return Self.intervalText(value: Int(ceil(seconds / day)), unit: "day")
+        case ..<month:
+            return Self.intervalText(value: Int(ceil(seconds / week)), unit: "week")
+        default:
+            return Self.intervalText(value: Int(ceil(seconds / month)), unit: "month")
+        }
+    }
+
+    private static func intervalText(value: Int, unit: String) -> String {
+        "\(value) \(unit)\(value == 1 ? "" : "s")"
+    }
 }
 
 private struct SettingsViewContent: View {
