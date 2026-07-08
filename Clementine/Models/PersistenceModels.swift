@@ -43,6 +43,7 @@ final class StudyCard {
     var dueAt: Date = Date()
     var fsrsCardData: Data?
     var isSuspended: Bool = false
+    var suspendedAt: Date?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
@@ -76,6 +77,7 @@ final class ReviewEvent {
     var gradeRaw: String = ReviewGrade.good.rawValue
     var interactionRaw: String = ReviewInteraction.multipleChoice.rawValue
     var reviewedAt: Date = Date()
+    var scheduledDueAt: Date?
     var wasCorrect: Bool = true
     var responseSeconds: Double = 0
 
@@ -85,6 +87,7 @@ final class ReviewEvent {
         grade: ReviewGrade,
         interaction: ReviewInteraction,
         reviewedAt: Date = Date(),
+        scheduledDueAt: Date? = nil,
         wasCorrect: Bool,
         responseSeconds: Double
     ) {
@@ -93,8 +96,30 @@ final class ReviewEvent {
         self.gradeRaw = grade.rawValue
         self.interactionRaw = interaction.rawValue
         self.reviewedAt = reviewedAt
+        self.scheduledDueAt = scheduledDueAt
         self.wasCorrect = wasCorrect
         self.responseSeconds = responseSeconds
+    }
+}
+
+@Model
+final class CardStateEvent {
+    var id: UUID = UUID()
+    var cardKey: String = ""
+    var noteSourceID: String = ""
+    var changedAt: Date = Date()
+    var isSuspended: Bool = false
+
+    init(
+        cardKey: String,
+        noteSourceID: String,
+        changedAt: Date = Date(),
+        isSuspended: Bool
+    ) {
+        self.cardKey = cardKey
+        self.noteSourceID = noteSourceID
+        self.changedAt = changedAt
+        self.isSuspended = isSuspended
     }
 }
 

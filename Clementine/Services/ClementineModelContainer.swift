@@ -11,6 +11,7 @@ enum ClementineModelContainer {
             VocabularyNote.self,
             StudyCard.self,
             ReviewEvent.self,
+            CardStateEvent.self,
             UserSettings.self,
             SeedInstall.self
         ])

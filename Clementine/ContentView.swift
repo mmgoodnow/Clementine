@@ -13,6 +13,7 @@ private struct ReviewUndoState {
     var previousDueAt: Date
     var previousUpdatedAt: Date
     var previousIsSuspended: Bool
+    var previousSuspendedAt: Date?
     var reviewEvent: ReviewEvent
     var servingCounters: ServingCounters
     var servingPlannedCardIDs: Set<UUID>
@@ -39,6 +40,7 @@ struct ContentView: View {
     @Query(sort: \VocabularyNote.sourceID) private var notes: [VocabularyNote]
     @Query(sort: \StudyCard.dueAt) private var cards: [StudyCard]
     @Query(sort: \ReviewEvent.reviewedAt, order: .reverse) private var reviews: [ReviewEvent]
+    @Query(sort: \CardStateEvent.changedAt) private var cardStateEvents: [CardStateEvent]
     @Query private var settingsRecords: [UserSettings]
 
     @State private var selectedTab: AppTab = .study
@@ -81,6 +83,7 @@ struct ContentView: View {
                     notes: notes,
                     cards: cards,
                     reviews: reviews,
+                    cardStateEvents: cardStateEvents,
                     learningPace: settings?.learningPace ?? .balanced,
                     reduceActiveLoad: reduceActiveLoad,
                     resumeSuspendedCards: resumeSuspendedCards
@@ -296,7 +299,14 @@ struct ContentView: View {
            let selectedCard = cards.first(where: { $0.id == selectedCandidate.id }) {
             if selectedCard.isSuspended {
                 selectedCard.isSuspended = false
+                selectedCard.suspendedAt = nil
                 selectedCard.updatedAt = now
+                modelContext.insert(CardStateEvent(
+                    cardKey: selectedCard.cardKey,
+                    noteSourceID: selectedCard.noteSourceID,
+                    changedAt: now,
+                    isSuspended: false
+                ))
                 scheduleModelSave()
             }
             activeInteractionMode = interactionMode(for: selectedCard)
@@ -425,7 +435,14 @@ struct ContentView: View {
         let now = Date()
         for card in cards where idsToSuspend.contains(card.id) {
             card.isSuspended = true
+            card.suspendedAt = now
             card.updatedAt = now
+            modelContext.insert(CardStateEvent(
+                cardKey: card.cardKey,
+                noteSourceID: card.noteSourceID,
+                changedAt: now,
+                isSuspended: true
+            ))
         }
 
         try? modelContext.save()
@@ -446,7 +463,14 @@ struct ContentView: View {
         let now = Date()
         for card in cards where idsToResume.contains(card.id) {
             card.isSuspended = false
+            card.suspendedAt = nil
             card.updatedAt = now
+            modelContext.insert(CardStateEvent(
+                cardKey: card.cardKey,
+                noteSourceID: card.noteSourceID,
+                changedAt: now,
+                isSuspended: false
+            ))
         }
 
         endServingPass()
@@ -575,6 +599,7 @@ struct ContentView: View {
                 grade: grade,
                 interaction: interaction,
                 reviewedAt: now,
+                scheduledDueAt: review.dueAt,
                 wasCorrect: wasCorrect,
                 responseSeconds: responseSeconds
             )
@@ -585,6 +610,7 @@ struct ContentView: View {
                 previousDueAt: card.dueAt,
                 previousUpdatedAt: card.updatedAt,
                 previousIsSuspended: card.isSuspended,
+                previousSuspendedAt: card.suspendedAt,
                 reviewEvent: reviewEvent,
                 servingCounters: servingCounters,
                 servingPlannedCardIDs: servingPlannedCardIDs,
@@ -635,6 +661,7 @@ struct ContentView: View {
         card.dueAt = undo.previousDueAt
         card.updatedAt = undo.previousUpdatedAt
         card.isSuspended = undo.previousIsSuspended
+        card.suspendedAt = undo.previousSuspendedAt
         modelContext.delete(undo.reviewEvent)
 
         servingCounters = undo.servingCounters
@@ -1196,6 +1223,7 @@ private struct ProgressViewContent: View {
     var notes: [VocabularyNote]
     var cards: [StudyCard]
     var reviews: [ReviewEvent]
+    var cardStateEvents: [CardStateEvent]
     var learningPace: LearningPace
     var reduceActiveLoad: ([UUID]) -> Void
     var resumeSuspendedCards: ([UUID]) -> Void
@@ -1355,8 +1383,8 @@ private struct ProgressViewContent: View {
                         AxisMarks(position: .leading)
                     }
                     .frame(height: 180)
-                    .accessibilityLabel("Cumulative introduced vocabulary grouped by current state")
-                    Text("Cumulative vocabulary introduced by each day. Colors show each card's current state.")
+                    .accessibilityLabel("Cumulative introduced vocabulary grouped by historical state")
+                    Text("Cumulative vocabulary introduced by each day. Colors show each card's state on that day.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -1593,26 +1621,35 @@ private struct ProgressViewContent: View {
             }
         )
 
+        let reviewEventsBySourceID = Dictionary(grouping: reviews.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+            .mapValues { events in
+                events.sorted { $0.reviewedAt < $1.reviewedAt }
+            }
+        let stateEventsBySourceID = Dictionary(grouping: cardStateEvents.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+            .mapValues { events in
+                events.sorted { $0.changedAt < $1.changedAt }
+            }
+
         let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
             guard let card = introducedCardsBySourceID[sourceID] else { return nil }
             return IntroducedVocabularyEntry(
                 introducedDay: introducedDay,
-                bucket: IntroducedVocabularyDueBucket(
-                    dueAt: card.dueAt,
-                    isSuspended: card.isSuspended,
-                    now: now
-                )
+                card: card,
+                reviews: reviewEventsBySourceID[sourceID] ?? [],
+                stateEvents: stateEventsBySourceID[sourceID] ?? []
             )
         }
 
         guard !introducedEntries.isEmpty else { return [] }
 
-        let entriesByBucket = Dictionary(grouping: introducedEntries, by: \.bucket)
-            .mapValues { entries in entries.map(\.introducedDay).sorted() }
-
-        return days.flatMap { day in
-            IntroducedVocabularyDueBucket.allCases.compactMap { bucket in
-                let count = entriesByBucket[bucket]?.prefix { $0 <= day }.count ?? 0
+        return days.flatMap { day -> [VocabularyPoint] in
+            let nextDay = calendar.date(byAdding: .day, value: 1, to: day) ?? day
+            let referenceDate = min(nextDay.addingTimeInterval(-1), now)
+            let entriesByBucket = Dictionary(grouping: introducedEntries.filter { $0.introducedDay <= day }) { entry in
+                entry.bucket(on: referenceDate, now: now)
+            }
+            return IntroducedVocabularyDueBucket.allCases.compactMap { bucket -> VocabularyPoint? in
+                let count = entriesByBucket[bucket]?.count ?? 0
                 guard count > 0 else { return nil }
                 return VocabularyPoint(day: day, bucket: bucket, count: count)
             }
@@ -1746,7 +1783,41 @@ private struct ProgressSnapshot {
 
 private struct IntroducedVocabularyEntry {
     var introducedDay: Date
-    var bucket: IntroducedVocabularyDueBucket
+    var card: StudyCard
+    var reviews: [ReviewEvent]
+    var stateEvents: [CardStateEvent]
+
+    func bucket(on referenceDate: Date, now: Date) -> IntroducedVocabularyDueBucket {
+        if isSuspended(on: referenceDate) {
+            return .suspended
+        }
+
+        let dueAt = dueAt(on: referenceDate, now: now)
+        return IntroducedVocabularyDueBucket(dueAt: dueAt, isSuspended: false, now: referenceDate)
+    }
+
+    private func isSuspended(on referenceDate: Date) -> Bool {
+        if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
+            return event.isSuspended
+        }
+
+        guard card.isSuspended else { return false }
+        let suspendedAt = card.suspendedAt ?? card.updatedAt
+        return suspendedAt <= referenceDate
+    }
+
+    private func dueAt(on referenceDate: Date, now: Date) -> Date {
+        if let review = reviews.last(where: { $0.reviewedAt <= referenceDate }),
+           let scheduledDueAt = review.scheduledDueAt {
+            return scheduledDueAt
+        }
+
+        if referenceDate >= now || reviews.last?.reviewedAt ?? .distantPast <= referenceDate {
+            return card.dueAt
+        }
+
+        return referenceDate
+    }
 }
 
 private enum IntroducedVocabularyDueBucket: String, CaseIterable {
@@ -1889,6 +1960,7 @@ private struct SettingsViewContent: View {
             VocabularyNote.self,
             StudyCard.self,
             ReviewEvent.self,
+            CardStateEvent.self,
             UserSettings.self,
             SeedInstall.self
         ], inMemory: true)
