@@ -1318,24 +1318,19 @@ private struct ProgressViewContent: View {
                     EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
                     Chart(snapshot.introducedVocabularyPoints) { point in
-                        AreaMark(
+                        BarMark(
                             x: .value("Day", point.day, unit: .day),
-                            y: .value("Introduced", point.count)
+                            y: .value("Introduced", point.count),
+                            stacking: .standard
                         )
-                        .foregroundStyle(.green.opacity(0.16))
-
-                        LineMark(
-                            x: .value("Day", point.day, unit: .day),
-                            y: .value("Introduced", point.count)
-                        )
-                        .foregroundStyle(.green)
-                        .interpolationMethod(.stepEnd)
+                        .foregroundStyle(by: .value("Next review", point.bucket.label))
                     }
+                    .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
                     .chartYAxis {
                         AxisMarks(position: .leading)
                     }
                     .frame(height: 180)
-                    .accessibilityLabel("Introduced vocabulary over time")
+                    .accessibilityLabel("Introduced vocabulary over time grouped by next review timing")
                 }
             }
 
@@ -1477,7 +1472,7 @@ private struct ProgressViewContent: View {
             resumeSuspendedCardIDs: resumeSuspendedCardIDs,
             intakeForecast: intakeForecast,
             reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: workloadCandidates, now: now),
-            introducedVocabularyPoints: introducedVocabularyPoints,
+            introducedVocabularyPoints: introducedVocabularyPoints(now: now),
             accuracyPoints: accuracyPoints,
             reviewMixSegments: reviewMixSegments
         )
@@ -1539,11 +1534,11 @@ private struct ProgressViewContent: View {
         return count
     }
 
-    private var introducedVocabularyPoints: [VocabularyPoint] {
+    private func introducedVocabularyPoints(now: Date) -> [VocabularyPoint] {
         guard !reviews.isEmpty else { return [] }
 
         let calendar = Calendar.current
-        let end = calendar.startOfDay(for: Date())
+        let end = calendar.startOfDay(for: now)
         let earliest = reviews
             .map { calendar.startOfDay(for: $0.reviewedAt) }
             .min() ?? end
@@ -1551,19 +1546,44 @@ private struct ProgressViewContent: View {
         let minimumWindowStart = calendar.date(byAdding: .day, value: -6, to: end) ?? end
         let start = min(max(earliest, lastThirtyDays), minimumWindowStart)
         let days = dateRange(from: start, to: end)
-        let firstReviewDays = Dictionary(grouping: reviews.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
-            .values
-            .compactMap { noteReviews in
+        let firstReviewDaysBySourceID = Dictionary(grouping: reviews.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+            .compactMapValues { noteReviews in
                 noteReviews.map(\.reviewedAt).min().map { calendar.startOfDay(for: $0) }
             }
-            .sorted()
-        var introducedIndex = 0
 
-        return days.map { day in
-            while introducedIndex < firstReviewDays.count, firstReviewDays[introducedIndex] <= day {
-                introducedIndex += 1
+        let introducedCardsBySourceID = Dictionary(
+            cards.filter { card in
+                card.fsrsCardData != nil && !card.noteSourceID.isEmpty
+            }.map { card in
+                (card.noteSourceID, card)
+            },
+            uniquingKeysWith: { lhs, rhs in
+                if lhs.isSuspended != rhs.isSuspended {
+                    return lhs.isSuspended ? rhs : lhs
+                }
+                return lhs.dueAt < rhs.dueAt ? lhs : rhs
             }
-            return VocabularyPoint(day: day, count: introducedIndex)
+        )
+
+        let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
+            guard let card = introducedCardsBySourceID[sourceID] else { return nil }
+            return IntroducedVocabularyEntry(
+                introducedDay: introducedDay,
+                bucket: IntroducedVocabularyDueBucket(dueAt: card.dueAt, now: now)
+            )
+        }
+
+        guard !introducedEntries.isEmpty else { return [] }
+
+        let entriesByBucket = Dictionary(grouping: introducedEntries, by: \.bucket)
+            .mapValues { entries in entries.map(\.introducedDay).sorted() }
+
+        return days.flatMap { day in
+            IntroducedVocabularyDueBucket.allCases.compactMap { bucket in
+                let count = entriesByBucket[bucket]?.prefix { $0 <= day }.count ?? 0
+                guard count > 0 else { return nil }
+                return VocabularyPoint(day: day, bucket: bucket, count: count)
+            }
         }
     }
 
@@ -1692,9 +1712,64 @@ private struct ProgressSnapshot {
     var reviewMixSegments: [ReviewMixSegment]
 }
 
+private struct IntroducedVocabularyEntry {
+    var introducedDay: Date
+    var bucket: IntroducedVocabularyDueBucket
+}
+
+private enum IntroducedVocabularyDueBucket: String, CaseIterable {
+    case dueNow
+    case today
+    case oneToThreeDays
+    case fourToSevenDays
+    case oneToFourWeeks
+    case monthPlus
+
+    init(dueAt: Date, now: Date) {
+        let daysUntilDue = dueAt.timeIntervalSince(now) / (24 * 60 * 60)
+        switch daysUntilDue {
+        case ...0:
+            self = .dueNow
+        case ..<1:
+            self = .today
+        case ..<4:
+            self = .oneToThreeDays
+        case ..<8:
+            self = .fourToSevenDays
+        case ..<29:
+            self = .oneToFourWeeks
+        default:
+            self = .monthPlus
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .dueNow: "Due now"
+        case .today: "<1 day"
+        case .oneToThreeDays: "1-3 days"
+        case .fourToSevenDays: "4-7 days"
+        case .oneToFourWeeks: "1-4 weeks"
+        case .monthPlus: "1+ month"
+        }
+    }
+
+    static var chartStyles: KeyValuePairs<String, Color> {
+        [
+            "Due now": .red,
+            "<1 day": .orange,
+            "1-3 days": .yellow,
+            "4-7 days": .green,
+            "1-4 weeks": .teal,
+            "1+ month": .blue,
+        ]
+    }
+}
+
 private struct VocabularyPoint: Identifiable {
-    var id: Date { day }
+    var id: String { "\(day.timeIntervalSinceReferenceDate)-\(bucket.rawValue)" }
     var day: Date
+    var bucket: IntroducedVocabularyDueBucket
     var count: Int
 }
 
