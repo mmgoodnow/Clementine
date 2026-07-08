@@ -1338,7 +1338,7 @@ private struct ProgressViewContent: View {
                 .accessibilityLabel("Forecasted review load for the next seven days")
             }
 
-            Section("Introduced Vocabulary") {
+            Section("Introduced Cohorts") {
                 if snapshot.introducedVocabularyPoints.isEmpty {
                     EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
@@ -1348,14 +1348,17 @@ private struct ProgressViewContent: View {
                             y: .value("Introduced", point.count),
                             stacking: .standard
                         )
-                        .foregroundStyle(by: .value("Next review", point.bucket.label))
+                        .foregroundStyle(by: .value("Current state", point.bucket.label))
                     }
                     .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
                     .chartYAxis {
                         AxisMarks(position: .leading)
                     }
                     .frame(height: 180)
-                    .accessibilityLabel("Introduced vocabulary over time grouped by next review timing")
+                    .accessibilityLabel("Vocabulary introduced each day grouped by current state")
+                    Text("Bars show when vocabulary was introduced. Colors show each card's current state.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -1604,12 +1607,14 @@ private struct ProgressViewContent: View {
 
         guard !introducedEntries.isEmpty else { return [] }
 
-        let entriesByBucket = Dictionary(grouping: introducedEntries, by: \.bucket)
-            .mapValues { entries in entries.map(\.introducedDay).sorted() }
+        let entriesByDayAndBucket = Dictionary(
+            grouping: introducedEntries,
+            by: { IntroducedVocabularyKey(day: $0.introducedDay, bucket: $0.bucket) }
+        )
 
         return days.flatMap { day in
             IntroducedVocabularyDueBucket.allCases.compactMap { bucket in
-                let count = entriesByBucket[bucket]?.prefix { $0 <= day }.count ?? 0
+                let count = entriesByDayAndBucket[IntroducedVocabularyKey(day: day, bucket: bucket)]?.count ?? 0
                 guard count > 0 else { return nil }
                 return VocabularyPoint(day: day, bucket: bucket, count: count)
             }
@@ -1743,6 +1748,11 @@ private struct ProgressSnapshot {
 
 private struct IntroducedVocabularyEntry {
     var introducedDay: Date
+    var bucket: IntroducedVocabularyDueBucket
+}
+
+private struct IntroducedVocabularyKey: Hashable {
+    var day: Date
     var bucket: IntroducedVocabularyDueBucket
 }
 
