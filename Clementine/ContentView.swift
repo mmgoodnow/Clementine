@@ -1370,23 +1370,25 @@ private struct ProgressViewContent: View {
                 if snapshot.introducedVocabularyPoints.isEmpty {
                     EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
-                    Chart(snapshot.introducedVocabularyPoints) { point in
-                        BarMark(
-                            x: .value("Day", point.day, unit: .day),
-                            y: .value("Introduced", point.count),
-                            stacking: .standard
-                        )
-                        .foregroundStyle(by: .value("Current state", point.bucket.label))
-                    }
-                    .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
-                    .chartYAxis {
-                        AxisMarks(position: .leading)
-                    }
-                    .frame(height: 180)
-                    .accessibilityLabel("Cumulative introduced vocabulary grouped by historical state")
-                    Text("Cumulative vocabulary introduced by each day. Colors show each card's state on that day.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+	                    Chart(snapshot.introducedVocabularyPoints) { point in
+	                        BarMark(
+	                            x: .value("Day", point.day, unit: .day),
+	                            y: .value("Introduced", point.count),
+	                            stacking: .standard
+	                        )
+	                        .foregroundStyle(by: .value("State", point.bucket.label))
+	                    }
+	                    .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
+	                    .chartLegend(.hidden)
+	                    .chartYAxis {
+	                        AxisMarks(position: .leading)
+	                    }
+	                    .frame(height: 180)
+	                    .accessibilityLabel("Cumulative introduced vocabulary grouped by historical state")
+	                    IntroducedVocabularyLegend()
+	                    Text("Cumulative vocabulary introduced by each day. Colors show each card's state on that day.")
+	                        .font(.footnote)
+	                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -1625,20 +1627,30 @@ private struct ProgressViewContent: View {
             .mapValues { events in
                 events.sorted { $0.reviewedAt < $1.reviewedAt }
             }
-        let stateEventsBySourceID = Dictionary(grouping: cardStateEvents.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
-            .mapValues { events in
-                events.sorted { $0.changedAt < $1.changedAt }
-            }
+	        let stateEventsBySourceID = Dictionary(grouping: cardStateEvents.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+	            .mapValues { events in
+	                events.sorted { $0.changedAt < $1.changedAt }
+	            }
+	        let sourceIDsWithStateEvents = Set(cardStateEvents.map(\.noteSourceID))
+	        let inferredLegacySuspendedAt = introducedCardsBySourceID.values
+	            .filter { card in
+	                card.isSuspended
+	                    && card.suspendedAt == nil
+	                    && !sourceIDsWithStateEvents.contains(card.noteSourceID)
+	            }
+	            .map(\.updatedAt)
+	            .max()
 
-        let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
-            guard let card = introducedCardsBySourceID[sourceID] else { return nil }
-            return IntroducedVocabularyEntry(
-                introducedDay: introducedDay,
-                card: card,
-                reviews: reviewEventsBySourceID[sourceID] ?? [],
-                stateEvents: stateEventsBySourceID[sourceID] ?? []
-            )
-        }
+	        let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
+	            guard let card = introducedCardsBySourceID[sourceID] else { return nil }
+	            return IntroducedVocabularyEntry(
+	                introducedDay: introducedDay,
+	                card: card,
+	                reviews: reviewEventsBySourceID[sourceID] ?? [],
+	                stateEvents: stateEventsBySourceID[sourceID] ?? [],
+	                inferredLegacySuspendedAt: inferredLegacySuspendedAt
+	            )
+	        }
 
         guard !introducedEntries.isEmpty else { return [] }
 
@@ -1763,6 +1775,29 @@ private struct EmptyChartMessage: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
+	}
+}
+
+private struct IntroducedVocabularyLegend: View {
+    private let columns = [
+        GridItem(.adaptive(minimum: 74), spacing: 10, alignment: .leading)
+    ]
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
+            ForEach(IntroducedVocabularyDueBucket.allCases, id: \.self) { bucket in
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(bucket.color)
+                        .frame(width: 8, height: 8)
+                    Text(bucket.label)
+                        .lineLimit(1)
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 2)
     }
 }
 
@@ -1783,9 +1818,10 @@ private struct ProgressSnapshot {
 
 private struct IntroducedVocabularyEntry {
     var introducedDay: Date
-    var card: StudyCard
-    var reviews: [ReviewEvent]
-    var stateEvents: [CardStateEvent]
+	var card: StudyCard
+	var reviews: [ReviewEvent]
+	var stateEvents: [CardStateEvent]
+    var inferredLegacySuspendedAt: Date?
 
     func bucket(on referenceDate: Date, now: Date) -> IntroducedVocabularyDueBucket {
         if isSuspended(on: referenceDate) {
@@ -1796,15 +1832,15 @@ private struct IntroducedVocabularyEntry {
         return IntroducedVocabularyDueBucket(dueAt: dueAt, isSuspended: false, now: referenceDate)
     }
 
-    private func isSuspended(on referenceDate: Date) -> Bool {
-        if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
-            return event.isSuspended
-        }
+	    private func isSuspended(on referenceDate: Date) -> Bool {
+	        if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
+	            return event.isSuspended
+	        }
 
-        guard card.isSuspended else { return false }
-        let suspendedAt = card.suspendedAt ?? card.updatedAt
-        return suspendedAt <= referenceDate
-    }
+	        guard card.isSuspended else { return false }
+	        let suspendedAt = card.suspendedAt ?? inferredLegacySuspendedAt ?? card.updatedAt
+	        return suspendedAt <= referenceDate
+	    }
 
     private func dueAt(on referenceDate: Date, now: Date) -> Date {
         if let review = reviews.last(where: { $0.reviewedAt <= referenceDate }),
@@ -1866,14 +1902,26 @@ private enum IntroducedVocabularyDueBucket: String, CaseIterable {
 
     static var chartStyles: KeyValuePairs<String, Color> {
         [
-            "Due": .red,
-            "1 day": .orange,
-            "3 days": .yellow,
-            "7 days": .green,
-            "4 weeks": .teal,
-            "Distant": .blue,
-            "Suspended": .gray,
+            "Due": due.color,
+            "1 day": oneDay.color,
+            "3 days": threeDays.color,
+            "7 days": sevenDays.color,
+            "4 weeks": fourWeeks.color,
+            "Distant": distant.color,
+            "Suspended": suspended.color,
         ]
+    }
+
+    var color: Color {
+        switch self {
+        case .due: .red
+        case .oneDay: .orange
+        case .threeDays: .yellow
+        case .sevenDays: .green
+        case .fourWeeks: .teal
+        case .distant: .blue
+        case .suspended: .gray
+        }
     }
 }
 
