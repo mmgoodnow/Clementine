@@ -230,6 +230,19 @@ struct ReviewHistoryEvent: Equatable {
     var cardKey: String
     var noteSourceID: String
     var reviewedAt: Date
+    var scheduledDueAt: Date?
+
+    init(
+        cardKey: String,
+        noteSourceID: String,
+        reviewedAt: Date,
+        scheduledDueAt: Date? = nil
+    ) {
+        self.cardKey = cardKey
+        self.noteSourceID = noteSourceID
+        self.reviewedAt = reviewedAt
+        self.scheduledDueAt = scheduledDueAt
+    }
 
     var learningKey: String {
         noteSourceID.isEmpty ? cardKey : noteSourceID
@@ -287,6 +300,40 @@ struct ReviewLoadForecastDay: Identifiable, Equatable {
     var id: Date { day }
     var day: Date
     var count: Int
+}
+
+private struct ReviewLoadProjection {
+    var sameDayReviewMultiplier: Double
+    var futureDayRatios: [(offset: Int, ratio: Double)]
+
+    init(reviews: [ReviewHistoryEvent], now: Date, calendar: Calendar) {
+        let recentCutoff = calendar.date(byAdding: .day, value: -14, to: now) ?? now
+        let scheduledReviews = reviews
+            .filter { $0.reviewedAt >= recentCutoff }
+            .compactMap { review -> Int? in
+                guard let scheduledDueAt = review.scheduledDueAt else { return nil }
+                let reviewDay = calendar.startOfDay(for: review.reviewedAt)
+                let dueDay = calendar.startOfDay(for: max(scheduledDueAt, review.reviewedAt))
+                return max(0, calendar.dateComponents([.day], from: reviewDay, to: dueDay).day ?? 0)
+            }
+
+        guard !scheduledReviews.isEmpty else {
+            sameDayReviewMultiplier = 1
+            futureDayRatios = []
+            return
+        }
+
+        let total = Double(scheduledReviews.count)
+        let grouped = Dictionary(grouping: scheduledReviews) { $0 }
+        let sameDayRatio = min(0.75, Double(grouped[0]?.count ?? 0) / total)
+        sameDayReviewMultiplier = 1 / max(0.25, 1 - sameDayRatio)
+        futureDayRatios = grouped
+            .filter { $0.key > 0 }
+            .map { offset, offsets in
+                (offset: offset, ratio: Double(offsets.count) / total)
+            }
+            .sorted { $0.offset < $1.offset }
+    }
 }
 
 struct CardSelectionExplanation: Equatable {
@@ -471,6 +518,7 @@ enum AdaptiveSessionPolicy {
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
         historicalReviewLoadPerNewCard: Double? = nil,
+        reviewHistoryEvents: [ReviewHistoryEvent] = [],
         now: Date,
         forceNewCards: Bool = false
     ) -> SessionDecision {
@@ -481,6 +529,7 @@ enum AdaptiveSessionPolicy {
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
             historicalReviewLoadPerNewCard: historicalReviewLoadPerNewCard,
+            reviewHistoryEvents: reviewHistoryEvents,
             now: now,
             forceNewCards: forceNewCards
         )
@@ -544,12 +593,18 @@ enum AdaptiveSessionPolicy {
         )
     }
 
-    static func forecastedReviewLoad(from candidates: [SessionCardCandidate], now: Date) -> Int {
-        let horizonEnd = Calendar.current.date(byAdding: .day, value: forecastHorizonDays, to: now) ?? now
-        let scheduledLoad = candidates.filter {
-            !$0.isNew && $0.dueAt <= horizonEnd
-        }.count
-        return scheduledLoad + relearningDebt(from: candidates, now: now)
+    static func forecastedReviewLoad(
+        from candidates: [SessionCardCandidate],
+        reviewHistoryEvents: [ReviewHistoryEvent] = [],
+        now: Date
+    ) -> Int {
+        reviewLoadForecastByDay(
+            from: candidates,
+            reviewHistoryEvents: reviewHistoryEvents,
+            now: now
+        )
+        .map(\.count)
+        .reduce(0, +) + relearningDebt(from: candidates, now: now)
     }
 
     static func relearningDebt(from candidates: [SessionCardCandidate], now: Date) -> Int {
@@ -560,19 +615,48 @@ enum AdaptiveSessionPolicy {
             }
     }
 
-    static func reviewLoadForecastByDay(from candidates: [SessionCardCandidate], now: Date) -> [ReviewLoadForecastDay] {
+    static func reviewLoadForecastByDay(
+        from candidates: [SessionCardCandidate],
+        reviewHistoryEvents: [ReviewHistoryEvent] = [],
+        now: Date
+    ) -> [ReviewLoadForecastDay] {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: now)
         let days = (0..<forecastHorizonDays).compactMap {
             calendar.date(byAdding: .day, value: $0, to: start)
         }
-        let grouped = Dictionary(grouping: candidates.filter { !$0.isNew }) {
-            calendar.startOfDay(for: max($0.dueAt, now))
+        var projectedDueCounts = Array(repeating: 0.0, count: forecastHorizonDays)
+        for candidate in candidates where !candidate.isNew {
+            let dueDay = calendar.startOfDay(for: max(candidate.dueAt, now))
+            guard let dayIndex = calendar.dateComponents([.day], from: start, to: dueDay).day,
+                  dayIndex >= 0,
+                  dayIndex < forecastHorizonDays
+            else { continue }
+            projectedDueCounts[dayIndex] += 1
         }
 
-        return days.map { day in
-            ReviewLoadForecastDay(day: day, count: grouped[day]?.count ?? 0)
+        let projection = ReviewLoadProjection(reviews: reviewHistoryEvents, now: now, calendar: calendar)
+        var forecast: [ReviewLoadForecastDay] = []
+
+        for dayIndex in 0..<forecastHorizonDays {
+            let dueToday = projectedDueCounts[dayIndex]
+            let reviewsToday = dueToday * projection.sameDayReviewMultiplier
+            forecast.append(
+                ReviewLoadForecastDay(
+                    day: days[dayIndex],
+                    count: Int(reviewsToday.rounded(.toNearestOrAwayFromZero))
+                )
+            )
+
+            guard reviewsToday > 0 else { continue }
+            for (offset, ratio) in projection.futureDayRatios where offset > 0 {
+                let targetIndex = dayIndex + offset
+                guard targetIndex < forecastHorizonDays else { continue }
+                projectedDueCounts[targetIndex] += reviewsToday * ratio
+            }
         }
+
+        return forecast
     }
 
     static func historicalReviewLoadPerNewCard(
@@ -626,6 +710,7 @@ enum AdaptiveSessionPolicy {
         recentAccuracy: Double,
         newCardsStudiedToday: Int = 0,
         historicalReviewLoadPerNewCard: Double? = nil,
+        reviewHistoryEvents: [ReviewHistoryEvent] = [],
         now: Date,
         forceNewCards: Bool = false
     ) -> NewCardIntakeForecast {
@@ -634,7 +719,11 @@ enum AdaptiveSessionPolicy {
         let availableIntakeCards = availableNewCards + availableReintroductionCards
         let workloadCandidates = loadCandidates ?? candidates
         let relearningDebt = relearningDebt(from: workloadCandidates, now: now)
-        let forecastedReviewLoad = forecastedReviewLoad(from: workloadCandidates, now: now)
+        let forecastedReviewLoad = forecastedReviewLoad(
+            from: workloadCandidates,
+            reviewHistoryEvents: reviewHistoryEvents,
+            now: now
+        )
         let availableLoad = max(0, pace.reviewLoadBudget - forecastedReviewLoad)
         let forcedBatch = forceNewCards ? pace.forcedContinueNewCardBatch : 0
 

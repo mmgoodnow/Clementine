@@ -180,7 +180,8 @@ struct ContentView: View {
             ReviewHistoryEvent(
                 cardKey: $0.cardKey,
                 noteSourceID: $0.noteSourceID,
-                reviewedAt: $0.reviewedAt
+                reviewedAt: $0.reviewedAt,
+                scheduledDueAt: $0.scheduledDueAt
             )
         }
     }
@@ -193,6 +194,7 @@ struct ContentView: View {
             pace: settings?.learningPace ?? .balanced,
             forecastedReviewLoad: AdaptiveSessionPolicy.forecastedReviewLoad(
                 from: candidates,
+                reviewHistoryEvents: reviewHistoryEvents,
                 now: now
             ),
             recentAccuracy: recentAccuracy
@@ -284,6 +286,7 @@ struct ContentView: View {
             recentAccuracy: recentAccuracy,
             newCardsStudiedToday: newCardsStudiedToday,
             historicalReviewLoadPerNewCard: historicalReviewLoad,
+            reviewHistoryEvents: reviewHistoryEvents,
             now: now,
             forceNewCards: forceNewCards
         )
@@ -1484,7 +1487,8 @@ private struct ProgressViewContent: View {
             ReviewHistoryEvent(
                 cardKey: $0.cardKey,
                 noteSourceID: $0.noteSourceID,
-                reviewedAt: $0.reviewedAt
+                reviewedAt: $0.reviewedAt,
+                scheduledDueAt: $0.scheduledDueAt
             )
         }
         let recentAccuracy = recentAccuracy
@@ -1499,6 +1503,7 @@ private struct ProgressViewContent: View {
                 from: reviewHistoryEvents,
                 now: now
             ),
+            reviewHistoryEvents: reviewHistoryEvents,
             now: now
         )
         let loadSheddingCandidateIDs = LoadSheddingPolicy.cardIDsToSuspend(
@@ -1529,7 +1534,11 @@ private struct ProgressViewContent: View {
             loadSheddingCandidateIDs: loadSheddingCandidateIDs,
             resumeSuspendedCardIDs: resumeSuspendedCardIDs,
             intakeForecast: intakeForecast,
-            reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(from: workloadCandidates, now: now),
+            reviewLoadForecast: AdaptiveSessionPolicy.reviewLoadForecastByDay(
+                from: workloadCandidates,
+                reviewHistoryEvents: reviewHistoryEvents,
+                now: now
+            ),
             introducedVocabularyPoints: introducedVocabularyPoints(now: now),
             accuracyPoints: accuracyPoints,
             reviewMixSegments: reviewMixSegments

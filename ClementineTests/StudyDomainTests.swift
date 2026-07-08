@@ -765,6 +765,66 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertLessThan(forecast.newCardsToServe, forecast.passLimit)
     }
 
+    func testReviewLoadForecastProjectsFollowUpReviewsIteratively() {
+        let now = Calendar.current.date(from: DateComponents(year: 2024, month: 1, day: 1, hour: 12))!
+        let dueReview = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: false,
+            recentLapses: 0
+        )
+        let history = (0..<12).map { index in
+            ReviewHistoryEvent(
+                cardKey: "review-\(index)",
+                noteSourceID: "review-\(index)",
+                reviewedAt: now.addingTimeInterval(Double(-index) * 60),
+                scheduledDueAt: now.addingTimeInterval(24 * 60 * 60)
+            )
+        }
+
+        let forecast = AdaptiveSessionPolicy.reviewLoadForecastByDay(
+            from: [dueReview],
+            reviewHistoryEvents: history,
+            now: now
+        )
+
+        XCTAssertEqual(forecast[0].count, 1)
+        XCTAssertEqual(forecast[1].count, 1)
+    }
+
+    func testReviewLoadForecastUsesRecentSameDayAgainRatio() {
+        let now = Calendar.current.date(from: DateComponents(year: 2024, month: 1, day: 1, hour: 12))!
+        let dueReview = SessionCardCandidate(
+            id: UUID(),
+            dueAt: now,
+            isNew: false,
+            recentLapses: 0
+        )
+        let sameDayReviews = (0..<3).map { index in
+            ReviewHistoryEvent(
+                cardKey: "again-\(index)",
+                noteSourceID: "again-\(index)",
+                reviewedAt: now.addingTimeInterval(Double(-index) * 60),
+                scheduledDueAt: now.addingTimeInterval(5 * 60)
+            )
+        }
+        let tomorrowReview = ReviewHistoryEvent(
+            cardKey: "good",
+            noteSourceID: "good",
+            reviewedAt: now,
+            scheduledDueAt: now.addingTimeInterval(24 * 60 * 60)
+        )
+
+        let forecast = AdaptiveSessionPolicy.reviewLoadForecastByDay(
+            from: [dueReview],
+            reviewHistoryEvents: sameDayReviews + [tomorrowReview],
+            now: now
+        )
+
+        XCTAssertEqual(forecast[0].count, 4)
+        XCTAssertEqual(forecast[1].count, 4)
+    }
+
     func testSuspendedReviewLoadStillBlocksNewCardIntake() {
         let now = Date(timeIntervalSince1970: 1_000)
         let selectableNewCards = (0..<80).map { index in
