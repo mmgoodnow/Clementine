@@ -1660,7 +1660,7 @@ private struct ProgressViewContent: View {
             let entriesByBucket = Dictionary(grouping: introducedEntries.filter { $0.introducedDay <= day }) { entry in
                 entry.bucket(on: referenceDate, now: now)
             }
-            return IntroducedVocabularyDueBucket.allCases.compactMap { bucket -> VocabularyPoint? in
+            return IntroducedVocabularyDueBucket.stackOrder.compactMap { bucket -> VocabularyPoint? in
                 let count = entriesByBucket[bucket]?.count ?? 0
                 guard count > 0 else { return nil }
                 return VocabularyPoint(day: day, bucket: bucket, count: count)
@@ -1864,6 +1864,16 @@ private enum IntroducedVocabularyDueBucket: String, CaseIterable {
     case fourWeeks
     case distant
     case suspended
+
+    static let stackOrder: [IntroducedVocabularyDueBucket] = [
+        .suspended,
+        .due,
+        .oneDay,
+        .threeDays,
+        .sevenDays,
+        .fourWeeks,
+        .distant,
+    ]
 
     init(dueAt: Date, isSuspended: Bool, now: Date) {
         if isSuspended {
