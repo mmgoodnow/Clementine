@@ -37,6 +37,7 @@ struct ContentView: View {
     var seedError: Error?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \VocabularyNote.sourceID) private var notes: [VocabularyNote]
     @Query(sort: \StudyCard.dueAt) private var cards: [StudyCard]
     @Query(sort: \ReviewEvent.reviewedAt, order: .reverse) private var reviews: [ReviewEvent]
@@ -104,6 +105,9 @@ struct ContentView: View {
             moveToNextCard()
             prepareSpeech(for: activeNote)
         }
+        .task {
+            await periodicallyShowDueReviewsIfIdle()
+        }
         .onChange(of: cards.count) { _, _ in
             deduplicateSyncedSeedData()
             if activeCard == nil {
@@ -115,6 +119,10 @@ struct ContentView: View {
         }
         .onChange(of: activeCardID) { _, _ in
             prepareSpeech(for: activeNote)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            showDueReviewsIfIdle()
         }
         .background(shakeUndoDetector)
     }
@@ -258,10 +266,14 @@ struct ContentView: View {
         }
     }
 
-    private func moveToNextCard(forceNewCards: Bool = false) {
+    private func moveToNextCard(
+        forceNewCards: Bool = false,
+        forcedCards: [SessionCardCandidate]? = nil,
+        now: Date = Date()
+    ) {
         if forceNewCards {
             endServingPass()
-        } else if isServingPassActive, servingCounters.total <= 0 {
+        } else if forcedCards == nil, isServingPassActive, servingCounters.total <= 0 {
             endServingPass()
             activeCardID = nil
             activeInteractionMode = nil
@@ -271,30 +283,34 @@ struct ContentView: View {
             return
         }
 
-        let now = Date()
         let recentAgainCounts = recentAgainCountsByCardKey
-        let candidates = sessionCandidates(
-            includeSuspended: true,
-            recentAgainCounts: recentAgainCounts
-        )
-        let historicalReviewLoad = self.historicalReviewLoadPerNewCard
+        let orderedCards: [SessionCardCandidate]
+        if let forcedCards {
+            orderedCards = forcedCards
+        } else {
+            let candidates = sessionCandidates(
+                includeSuspended: true,
+                recentAgainCounts: recentAgainCounts
+            )
+            let historicalReviewLoad = self.historicalReviewLoadPerNewCard
 
-        let decision = AdaptiveSessionPolicy.chooseCards(
-            from: candidates,
-            loadCandidates: candidates,
-            pace: settings?.learningPace ?? .balanced,
-            recentAccuracy: recentAccuracy,
-            newCardsStudiedToday: newCardsStudiedToday,
-            historicalReviewLoadPerNewCard: historicalReviewLoad,
-            reviewHistoryEvents: reviewHistoryEvents,
-            now: now,
-            forceNewCards: forceNewCards
-        )
+            orderedCards = AdaptiveSessionPolicy.chooseCards(
+                from: candidates,
+                loadCandidates: candidates,
+                pace: settings?.learningPace ?? .balanced,
+                recentAccuracy: recentAccuracy,
+                newCardsStudiedToday: newCardsStudiedToday,
+                historicalReviewLoadPerNewCard: historicalReviewLoad,
+                reviewHistoryEvents: reviewHistoryEvents,
+                now: now,
+                forceNewCards: forceNewCards
+            ).orderedCards
+        }
 
         let selectedCandidate = AdaptiveSessionPolicy.nextCandidate(
-            from: decision.orderedCards,
-            recentCardIDs: Array(recentCardIDs.suffix(3)),
-            recentNoteSourceIDs: Array(recentNoteSourceIDs.suffix(2))
+            from: orderedCards,
+            recentCardIDs: forcedCards == nil ? Array(recentCardIDs.suffix(3)) : [],
+            recentNoteSourceIDs: forcedCards == nil ? Array(recentNoteSourceIDs.suffix(2)) : []
         )
 
         activeCardID = selectedCandidate?.id
@@ -322,7 +338,7 @@ struct ContentView: View {
         if selectedCandidate == nil {
             endServingPass()
         } else if !isServingPassActive {
-            startServingPass(with: decision.orderedCards)
+            startServingPass(with: orderedCards)
         }
         if let selectedCandidate {
             noteSelectedCandidate(selectedCandidate)
@@ -388,6 +404,34 @@ struct ContentView: View {
             }
     }
 
+    private func dueReviewCandidates(now: Date = Date()) -> [SessionCardCandidate] {
+        let lapseCounts = recentAgainCountsByCardKey
+        return AppBadgeUpdater.dueReviewCards(from: cards, now: now)
+            .sorted { lhs, rhs in
+                let lhsLapses = lapseCounts[lhs.cardKey] ?? 0
+                let rhsLapses = lapseCounts[rhs.cardKey] ?? 0
+                if lhsLapses != rhsLapses {
+                    return lhsLapses > rhsLapses
+                }
+                if lhs.dueAt != rhs.dueAt {
+                    return lhs.dueAt < rhs.dueAt
+                }
+                return lhs.cardKey < rhs.cardKey
+            }
+            .map { card in
+                SessionCardCandidate(
+                    id: card.id,
+                    dueAt: card.dueAt,
+                    isNew: false,
+                    isSuspended: false,
+                    recentLapses: lapseCounts[card.cardKey] ?? 0,
+                    cardKey: card.cardKey,
+                    noteSourceID: card.noteSourceID,
+                    kind: card.kind
+                )
+            }
+    }
+
     private var recentAgainCountsByCardKey: [String: Int] {
         var counts: [String: Int] = [:]
         for review in reviews where review.gradeRaw == ReviewGrade.again.rawValue {
@@ -398,7 +442,30 @@ struct ContentView: View {
     }
 
     private func continuePastNaturalStop() {
+        let now = Date()
+        if !dueReviewCandidates(now: now).isEmpty {
+            moveToNextDueReview(now: now)
+            return
+        }
+
         moveToNextCard(forceNewCards: true)
+    }
+
+    private func showDueReviewsIfIdle(now: Date = Date()) {
+        guard activeCard == nil, !dueReviewCandidates(now: now).isEmpty else { return }
+        moveToNextDueReview(now: now)
+    }
+
+    private func periodicallyShowDueReviewsIfIdle() async {
+        while !Task.isCancelled {
+            showDueReviewsIfIdle()
+            try? await Task.sleep(for: .seconds(60))
+        }
+    }
+
+    private func moveToNextDueReview(now: Date = Date()) {
+        endServingPass()
+        moveToNextCard(forcedCards: dueReviewCandidates(now: now), now: now)
     }
 
     private var suspendedCardCount: Int {
@@ -454,6 +521,7 @@ struct ContentView: View {
             self.activeCardID = nil
         }
         scheduleModelSave()
+        refreshBadgeSoon()
         if selectedTab == .study {
             moveToNextCard()
         }
@@ -478,6 +546,7 @@ struct ContentView: View {
 
         endServingPass()
         scheduleModelSave()
+        refreshBadgeSoon()
         if selectedTab == .study {
             moveToNextCard()
         }
@@ -487,6 +556,12 @@ struct ContentView: View {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(80))
             try? modelContext.save()
+        }
+    }
+
+    private func refreshBadgeSoon() {
+        Task { @MainActor in
+            await AppBadgeUpdater.refreshBadge(context: modelContext)
         }
     }
 
@@ -651,6 +726,7 @@ struct ContentView: View {
                 moveToNextCard()
             }
             scheduleModelSave()
+            refreshBadgeSoon()
         } catch {
             isAnswerRevealed = true
         }
@@ -680,6 +756,7 @@ struct ContentView: View {
         lastReviewUndo = nil
         prepareSpeech(for: activeNote)
         scheduleModelSave()
+        refreshBadgeSoon()
     }
 
     private func scheduleMultipleChoiceAdvance(cardID: UUID, selectedAnswer: String, wasCorrect: Bool) {

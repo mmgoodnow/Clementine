@@ -51,9 +51,21 @@ private struct RootBootstrapView: View {
                 await AppBadgeUpdater.periodicRefresh(context: modelContext)
             }
             .onChange(of: scenePhase) { _, phase in
-                guard phase == .active || phase == .background else { return }
-                Task {
-                    await AppBadgeUpdater.refreshBadge(context: modelContext)
+                if phase == .active {
+                    Task {
+                        await AppBadgeUpdater.refreshBadge(context: modelContext)
+                        AppBadgeUpdater.scheduleBackgroundRefresh()
+                    }
+                } else if phase == .background {
+                    Task { @MainActor in
+                        try? modelContext.save()
+                        AppBadgeUpdater.scheduleBackgroundRefresh()
+                    }
+                }
+            }
+            .onDisappear {
+                Task { @MainActor in
+                    try? modelContext.save()
                     AppBadgeUpdater.scheduleBackgroundRefresh()
                 }
             }

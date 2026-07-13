@@ -52,11 +52,21 @@ enum AppBadgeUpdater {
     static func dueReviewCount(context: ModelContext, now: Date = Date()) -> Int {
         let descriptor = FetchDescriptor<StudyCard>()
         let cards = (try? context.fetch(descriptor)) ?? []
-        return cards.filter { card in
-            !card.isSuspended &&
-                card.fsrsCardData != nil &&
-                card.dueAt <= now
-        }.count
+        return dueReviewCount(cards: cards, now: now)
+    }
+
+    static func dueReviewCount(cards: [StudyCard], now: Date = Date()) -> Int {
+        dueReviewCards(from: cards, now: now).count
+    }
+
+    static func dueReviewCards(from cards: [StudyCard], now: Date = Date()) -> [StudyCard] {
+        cards.filter { isDueReviewCard($0, now: now) }
+    }
+
+    static func isDueReviewCard(_ card: StudyCard, now: Date = Date()) -> Bool {
+        !card.isSuspended &&
+            card.fsrsCardData != nil &&
+            card.dueAt <= now
     }
 
     private static func setBadgeCount(_ count: Int) async {
