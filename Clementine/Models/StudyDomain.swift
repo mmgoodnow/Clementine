@@ -1,4 +1,13 @@
 import Foundation
+import SwiftUI
+
+extension String {
+    func applyingChineseTransform(_ transform: String) -> String {
+        let transformed = NSMutableString(string: self)
+        CFStringTransform(transformed, nil, transform as CFString, false)
+        return transformed as String
+    }
+}
 
 enum CardKind: String, Codable, CaseIterable, Identifiable {
     case hanziToMeaning
@@ -85,6 +94,50 @@ enum LearningPace: String, Codable, CaseIterable, Identifiable {
         case .low: 3
         case .balanced: 9
         case .high: 18
+        }
+    }
+}
+
+enum HanziScript: String, Codable, CaseIterable, Identifiable {
+    case simplified
+    case traditional
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .simplified: "Simplified"
+        case .traditional: "Traditional"
+        }
+    }
+
+    func displayText(for hanzi: String) -> String {
+        switch self {
+        case .simplified:
+            hanzi.applyingChineseTransform("Hant-Hans")
+        case .traditional:
+            hanzi.applyingChineseTransform("Hans-Hant")
+        }
+    }
+}
+
+enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
+    case serif
+    case sans
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .serif: "Serif"
+        case .sans: "Sans"
+        }
+    }
+
+    var fontDesign: Font.Design {
+        switch self {
+        case .serif: .serif
+        case .sans: .default
         }
     }
 }

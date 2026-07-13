@@ -127,17 +127,41 @@ final class CardStateEvent {
 final class UserSettings {
     var singletonID: String = "default"
     var learningPaceRaw: String = LearningPace.balanced.rawValue
+    var hanziScriptRaw: String = HanziScript.simplified.rawValue
+    var hanziTypefaceRaw: String = HanziTypeface.serif.rawValue
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
-    init(learningPace: LearningPace = .balanced) {
+    init(
+        learningPace: LearningPace = .balanced,
+        hanziScript: HanziScript = .simplified,
+        hanziTypeface: HanziTypeface = .serif
+    ) {
         self.learningPaceRaw = learningPace.rawValue
+        self.hanziScriptRaw = hanziScript.rawValue
+        self.hanziTypefaceRaw = hanziTypeface.rawValue
     }
 
     var learningPace: LearningPace {
         get { LearningPace(rawValue: learningPaceRaw) ?? .balanced }
         set {
             learningPaceRaw = newValue.rawValue
+            updatedAt = Date()
+        }
+    }
+
+    var hanziScript: HanziScript {
+        get { HanziScript(rawValue: hanziScriptRaw) ?? .simplified }
+        set {
+            hanziScriptRaw = newValue.rawValue
+            updatedAt = Date()
+        }
+    }
+
+    var hanziTypeface: HanziTypeface {
+        get { HanziTypeface(rawValue: hanziTypefaceRaw) ?? .serif }
+        set {
+            hanziTypefaceRaw = newValue.rawValue
             updatedAt = Date()
         }
     }

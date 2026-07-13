@@ -2,6 +2,16 @@
 import XCTest
 
 final class StudyDomainTests: XCTestCase {
+    func testHanziScriptConvertsBetweenSimplifiedAndTraditionalForDisplay() {
+        XCTAssertEqual(HanziScript.traditional.displayText(for: "学习"), "學習")
+        XCTAssertEqual(HanziScript.simplified.displayText(for: "學習"), "学习")
+    }
+
+    func testHanziTypefaceTitlesAreStable() {
+        XCTAssertEqual(HanziTypeface.serif.title, "Serif")
+        XCTAssertEqual(HanziTypeface.sans.title, "Sans")
+    }
+
     func testMultipleChoiceGradeMapping() {
         XCTAssertEqual(ReviewGradeMapper.multipleChoice(correct: false, responseSeconds: 1), .again)
         XCTAssertEqual(ReviewGradeMapper.multipleChoice(correct: true, responseSeconds: 9), .hard)

@@ -4,6 +4,24 @@ import XCTest
 
 @MainActor
 final class SeedImporterTests: XCTestCase {
+    func testUserSettingsPersistDisplayPreferences() throws {
+        let container = try ClementineModelContainer.make(inMemory: true)
+        let context = container.mainContext
+        let settings = UserSettings(
+            learningPace: .high,
+            hanziScript: .traditional,
+            hanziTypeface: .sans
+        )
+
+        context.insert(settings)
+        try context.save()
+
+        let fetched = try XCTUnwrap(context.fetch(FetchDescriptor<UserSettings>()).first)
+        XCTAssertEqual(fetched.learningPace, .high)
+        XCTAssertEqual(fetched.hanziScript, .traditional)
+        XCTAssertEqual(fetched.hanziTypeface, .sans)
+    }
+
     func testBadgeCountIncludesOnlyDueActiveReviewedCards() throws {
         let container = try ClementineModelContainer.make(inMemory: true)
         let context = container.mainContext

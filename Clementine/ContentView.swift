@@ -94,7 +94,11 @@ struct ContentView: View {
             .tag(AppTab.progress)
 
             NavigationStack {
-                SettingsViewContent(settings: settingsBinding)
+                SettingsViewContent(
+                    learningPace: learningPaceBinding,
+                    hanziScript: hanziScriptBinding,
+                    hanziTypeface: hanziTypefaceBinding
+                )
             }
             .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
             .tag(AppTab.settings)
@@ -141,7 +145,7 @@ struct ContentView: View {
         settingsRecords.first
     }
 
-    private var settingsBinding: Binding<LearningPace> {
+    private var learningPaceBinding: Binding<LearningPace> {
         Binding(
             get: { settings?.learningPace ?? .balanced },
             set: { newValue in
@@ -150,6 +154,29 @@ struct ContentView: View {
                 try? modelContext.save()
                 endServingPass()
                 moveToNextCard()
+            }
+        )
+    }
+
+    private var hanziScriptBinding: Binding<HanziScript> {
+        Binding(
+            get: { settings?.hanziScript ?? .simplified },
+            set: { newValue in
+                ensureSettings()
+                settings?.hanziScript = newValue
+                try? modelContext.save()
+                prepareSpeech(for: activeNote)
+            }
+        )
+    }
+
+    private var hanziTypefaceBinding: Binding<HanziTypeface> {
+        Binding(
+            get: { settings?.hanziTypeface ?? .serif },
+            set: { newValue in
+                ensureSettings()
+                settings?.hanziTypeface = newValue
+                try? modelContext.save()
             }
         )
     }
@@ -248,7 +275,9 @@ struct ContentView: View {
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
                 unseenVocabularyCount: unseenVocabularyCount,
-                lastReviewedSchedule: lastReviewedSchedule
+                lastReviewedSchedule: lastReviewedSchedule,
+                hanziScript: settings?.hanziScript ?? .simplified,
+                hanziTypeface: settings?.hanziTypeface ?? .serif
             )
         )
     }
@@ -769,13 +798,15 @@ struct ContentView: View {
 
     private func speak(_ note: VocabularyNote) {
         speechSynthesizer.stopSpeaking(at: .immediate)
-        speechSynthesizer.speak(mandarinUtterance(for: note.hanzi))
+        let spokenHanzi = (settings?.hanziScript ?? .simplified).displayText(for: note.hanzi)
+        speechSynthesizer.speak(mandarinUtterance(for: spokenHanzi))
     }
 
     private func prepareSpeech(for note: VocabularyNote?) {
         guard let note else { return }
         _ = cachedMandarinVoice()
-        warmSpeechSynthesizerIfNeeded(with: note.hanzi)
+        let spokenHanzi = (settings?.hanziScript ?? .simplified).displayText(for: note.hanzi)
+        warmSpeechSynthesizerIfNeeded(with: spokenHanzi)
     }
 
     private func warmSpeechSynthesizerIfNeeded(with text: String) {
@@ -840,6 +871,8 @@ private struct StudyPrompt {
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
     var lastReviewedSchedule: LastReviewedSchedule?
+    var hanziScript: HanziScript
+    var hanziTypeface: HanziTypeface
 }
 
 private struct StudyView: View {
@@ -889,18 +922,19 @@ private struct StudyCardView: View {
                 servingNewCount: prompt.servingNewCount,
                 servingReviewCount: prompt.servingReviewCount,
                 unseenVocabularyCount: prompt.unseenVocabularyCount,
-                lastReviewedSchedule: prompt.lastReviewedSchedule
+                lastReviewedSchedule: prompt.lastReviewedSchedule,
+                hanziScript: prompt.hanziScript
             )
 
             Spacer(minLength: 8)
 
             VStack(spacing: 10) {
-                Text(prompt.note.hanzi)
-                    .font(.system(size: 116, weight: .semibold, design: .serif))
+                Text(prompt.hanziScript.displayText(for: prompt.note.hanzi))
+                    .font(.system(size: 116, weight: .semibold, design: prompt.hanziTypeface.fontDesign))
                     .minimumScaleFactor(0.5)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
-                    .accessibilityLabel("Hanzi \(prompt.note.hanzi)")
+                    .accessibilityLabel("Hanzi \(prompt.hanziScript.displayText(for: prompt.note.hanzi))")
 
                 Button {
                     speak(prompt.note)
@@ -940,6 +974,7 @@ private struct StudyStatusBar: View {
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
     var lastReviewedSchedule: LastReviewedSchedule?
+    var hanziScript: HanziScript
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -948,7 +983,7 @@ private struct StudyStatusBar: View {
                 Spacer()
             }
             if let lastReviewedSchedule {
-                Text("\(lastReviewedSchedule.hanzi) · \(lastReviewedSchedule.pinyin) · \(lastReviewedSchedule.intervalText)")
+                Text("\(hanziScript.displayText(for: lastReviewedSchedule.hanzi)) · \(lastReviewedSchedule.pinyin) · \(lastReviewedSchedule.intervalText)")
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .transition(.opacity)
@@ -2077,14 +2112,32 @@ private extension Date {
 }
 
 private struct SettingsViewContent: View {
-    @Binding var settings: LearningPace
+    @Binding var learningPace: LearningPace
+    @Binding var hanziScript: HanziScript
+    @Binding var hanziTypeface: HanziTypeface
 
     var body: some View {
         Form {
             Section("Study") {
-                Picker("Learning Pace", selection: $settings) {
+                Picker("Learning Pace", selection: $learningPace) {
                     ForEach(LearningPace.allCases) { pace in
                         Text(pace.title).tag(pace)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            Section("Hanzi") {
+                Picker("Script", selection: $hanziScript) {
+                    ForEach(HanziScript.allCases) { script in
+                        Text(script.title).tag(script)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Picker("Typeface", selection: $hanziTypeface) {
+                    ForEach(HanziTypeface.allCases) { typeface in
+                        Text(typeface.title).tag(typeface)
                     }
                 }
                 .pickerStyle(.segmented)
