@@ -1,6 +1,12 @@
 import Foundation
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 extension String {
     func applyingChineseTransform(_ transform: String) -> String {
         let transformed = NSMutableString(string: self)
@@ -134,10 +140,39 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var fontDesign: Font.Design {
+    func displayFont(size: CGFloat, script: HanziScript) -> Font {
+        for fontName in fontNames(for: script) {
+            #if os(iOS)
+            if let font = UIFont(name: fontName, size: size) {
+                return Font(font)
+            }
+            #elseif os(macOS)
+            if let font = NSFont(name: fontName, size: size) {
+                return Font(font)
+            }
+            #endif
+        }
+
+        return .system(size: size, weight: .semibold, design: fallbackDesign)
+    }
+
+    private var fallbackDesign: Font.Design {
         switch self {
         case .serif: .serif
         case .sans: .default
+        }
+    }
+
+    private func fontNames(for script: HanziScript) -> [String] {
+        switch (self, script) {
+        case (.serif, .simplified):
+            ["STSongti-SC-Bold", "STSongti-SC-Regular", "Songti SC", "STSong"]
+        case (.serif, .traditional):
+            ["STSongti-TC-Bold", "STSongti-TC-Regular", "Songti TC", "STSong"]
+        case (.sans, .simplified):
+            ["PingFangSC-Semibold", "PingFangSC-Regular", "PingFang SC", "Heiti SC"]
+        case (.sans, .traditional):
+            ["PingFangTC-Semibold", "PingFangTC-Regular", "PingFang TC", "Heiti TC"]
         }
     }
 }

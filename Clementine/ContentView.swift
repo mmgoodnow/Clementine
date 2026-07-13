@@ -61,6 +61,7 @@ struct ContentView: View {
     @State private var isServingPassActive = false
     @State private var lastReviewUndo: ReviewUndoState?
     @State private var lastReviewedSchedule: LastReviewedSchedule?
+    @State private var displayPreferenceVersion = 0
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -164,6 +165,7 @@ struct ContentView: View {
             set: { newValue in
                 ensureSettings()
                 settings?.hanziScript = newValue
+                displayPreferenceVersion += 1
                 try? modelContext.save()
                 prepareSpeech(for: activeNote)
             }
@@ -176,6 +178,7 @@ struct ContentView: View {
             set: { newValue in
                 ensureSettings()
                 settings?.hanziTypeface = newValue
+                displayPreferenceVersion += 1
                 try? modelContext.save()
             }
         )
@@ -263,6 +266,7 @@ struct ContentView: View {
         )
         let unseenVocabularyCount = notes.filter { !introducedNoteSourceIDs.contains($0.sourceID) }.count
         let interactionMode = activeInteractionMode ?? interactionMode(for: activeCard)
+        _ = displayPreferenceVersion
 
         return .card(
             StudyPrompt(
@@ -930,7 +934,7 @@ private struct StudyCardView: View {
 
             VStack(spacing: 10) {
                 Text(prompt.hanziScript.displayText(for: prompt.note.hanzi))
-                    .font(.system(size: 116, weight: .semibold, design: prompt.hanziTypeface.fontDesign))
+                    .font(prompt.hanziTypeface.displayFont(size: 116, script: prompt.hanziScript))
                     .minimumScaleFactor(0.5)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -2128,6 +2132,11 @@ private struct SettingsViewContent: View {
             }
 
             Section("Hanzi") {
+                Text(hanziScript.displayText(for: "学习 汉字"))
+                    .font(hanziTypeface.displayFont(size: 42, script: hanziScript))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
+
                 Picker("Script", selection: $hanziScript) {
                     ForEach(HanziScript.allCases) { script in
                         Text(script.title).tag(script)
