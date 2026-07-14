@@ -166,9 +166,25 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
     private func fontNames(for script: HanziScript) -> [String] {
         switch (self, script) {
         case (.serif, .simplified):
-            ["STSongti-SC-Bold", "STSongti-SC-Regular", "Songti SC", "STSong"]
+            [
+                "STSongti-SC-Bold",
+                "STSongti-SC-Regular",
+                "STSongti-SC-Light",
+                "Songti SC",
+                "HiraMinProN-W6",
+                "HiraMinProN-W3",
+                "STSong"
+            ]
         case (.serif, .traditional):
-            ["STSongti-TC-Bold", "STSongti-TC-Regular", "Songti TC", "STSong"]
+            [
+                "STSongti-TC-Bold",
+                "STSongti-TC-Regular",
+                "STSongti-TC-Light",
+                "Songti TC",
+                "HiraMinProN-W6",
+                "HiraMinProN-W3",
+                "STSong"
+            ]
         case (.sans, .simplified):
             ["PingFangSC-Semibold", "PingFangSC-Regular", "PingFang SC", "Heiti SC"]
         case (.sans, .traditional):

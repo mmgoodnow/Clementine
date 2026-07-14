@@ -68,6 +68,7 @@ struct ContentView: View {
             NavigationStack {
                 StudyView(
                     state: studyState,
+                    displayPreferences: displayPreferences,
                     selectedChoice: $selectedChoice,
                     isAnswerRevealed: $isAnswerRevealed,
                     seedError: seedError,
@@ -266,7 +267,6 @@ struct ContentView: View {
         )
         let unseenVocabularyCount = notes.filter { !introducedNoteSourceIDs.contains($0.sourceID) }.count
         let interactionMode = activeInteractionMode ?? interactionMode(for: activeCard)
-        _ = displayPreferenceVersion
 
         return .card(
             StudyPrompt(
@@ -279,10 +279,17 @@ struct ContentView: View {
                 servingNewCount: servingCounters.new,
                 servingReviewCount: servingCounters.review,
                 unseenVocabularyCount: unseenVocabularyCount,
-                lastReviewedSchedule: lastReviewedSchedule,
-                hanziScript: settings?.hanziScript ?? .simplified,
-                hanziTypeface: settings?.hanziTypeface ?? .serif
+                lastReviewedSchedule: lastReviewedSchedule
             )
+        )
+    }
+
+    private var displayPreferences: DisplayPreferences {
+        _ = displayPreferenceVersion
+        return DisplayPreferences(
+            script: settings?.hanziScript ?? .simplified,
+            typeface: settings?.hanziTypeface ?? .serif,
+            version: displayPreferenceVersion
         )
     }
 
@@ -875,12 +882,17 @@ private struct StudyPrompt {
     var servingReviewCount: Int
     var unseenVocabularyCount: Int
     var lastReviewedSchedule: LastReviewedSchedule?
-    var hanziScript: HanziScript
-    var hanziTypeface: HanziTypeface
+}
+
+private struct DisplayPreferences: Equatable, Hashable {
+    var script: HanziScript
+    var typeface: HanziTypeface
+    var version: Int
 }
 
 private struct StudyView: View {
     var state: StudyScreenState
+    var displayPreferences: DisplayPreferences
     @Binding var selectedChoice: String?
     @Binding var isAnswerRevealed: Bool
     var seedError: Error?
@@ -899,6 +911,7 @@ private struct StudyView: View {
             case .card(let prompt):
                 StudyCardView(
                     prompt: prompt,
+                    displayPreferences: displayPreferences,
                     selectedChoice: $selectedChoice,
                     isAnswerRevealed: $isAnswerRevealed,
                     speak: speak,
@@ -913,6 +926,7 @@ private struct StudyView: View {
 
 private struct StudyCardView: View {
     var prompt: StudyPrompt
+    var displayPreferences: DisplayPreferences
     @Binding var selectedChoice: String?
     @Binding var isAnswerRevealed: Bool
     var speak: (VocabularyNote) -> Void
@@ -927,18 +941,19 @@ private struct StudyCardView: View {
                 servingReviewCount: prompt.servingReviewCount,
                 unseenVocabularyCount: prompt.unseenVocabularyCount,
                 lastReviewedSchedule: prompt.lastReviewedSchedule,
-                hanziScript: prompt.hanziScript
+                hanziScript: displayPreferences.script
             )
 
             Spacer(minLength: 8)
 
             VStack(spacing: 10) {
-                Text(prompt.hanziScript.displayText(for: prompt.note.hanzi))
-                    .font(prompt.hanziTypeface.displayFont(size: 116, script: prompt.hanziScript))
+                Text(displayPreferences.script.displayText(for: prompt.note.hanzi))
+                    .font(displayPreferences.typeface.displayFont(size: 116, script: displayPreferences.script))
                     .minimumScaleFactor(0.5)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
-                    .accessibilityLabel("Hanzi \(prompt.hanziScript.displayText(for: prompt.note.hanzi))")
+                    .accessibilityLabel("Hanzi \(displayPreferences.script.displayText(for: prompt.note.hanzi))")
+                    .id(displayPreferences)
 
                 Button {
                     speak(prompt.note)
