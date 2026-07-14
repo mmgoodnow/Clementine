@@ -12,6 +12,12 @@ final class SeedImporterTests: XCTestCase {
             hanziScript: .traditional,
             hanziTypeface: .sans
         )
+        let calibratedAt = Date(timeIntervalSince1970: 1_000)
+        settings.hasCompletedVocabularyCalibration = true
+        settings.calibratedVocabularyEstimate = 420
+        settings.calibratedVocabularyKnownCount = 12
+        settings.calibratedVocabularyQuestionCount = 24
+        settings.calibratedAt = calibratedAt
 
         context.insert(settings)
         try context.save()
@@ -20,6 +26,11 @@ final class SeedImporterTests: XCTestCase {
         XCTAssertEqual(fetched.learningPace, .high)
         XCTAssertEqual(fetched.hanziScript, .traditional)
         XCTAssertEqual(fetched.hanziTypeface, .sans)
+        XCTAssertTrue(fetched.hasCompletedVocabularyCalibration)
+        XCTAssertEqual(fetched.calibratedVocabularyEstimate, 420)
+        XCTAssertEqual(fetched.calibratedVocabularyKnownCount, 12)
+        XCTAssertEqual(fetched.calibratedVocabularyQuestionCount, 24)
+        XCTAssertEqual(fetched.calibratedAt, calibratedAt)
     }
 
     func testBadgeCountIncludesOnlyDueActiveReviewedCards() throws {

@@ -129,6 +129,11 @@ final class UserSettings {
     var learningPaceRaw: String = LearningPace.balanced.rawValue
     var hanziScriptRaw: String = HanziScript.simplified.rawValue
     var hanziTypefaceRaw: String = HanziTypeface.serif.rawValue
+    var hasCompletedVocabularyCalibration: Bool = false
+    var calibratedVocabularyEstimate: Int = 0
+    var calibratedVocabularyKnownCount: Int = 0
+    var calibratedVocabularyQuestionCount: Int = 0
+    var calibratedAt: Date?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 

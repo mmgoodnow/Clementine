@@ -62,6 +62,7 @@ struct ContentView: View {
     @State private var lastReviewUndo: ReviewUndoState?
     @State private var lastReviewedSchedule: LastReviewedSchedule?
     @State private var displayPreferenceVersion = 0
+    @State private var isVocabularyCalibrationPresented = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -99,7 +100,11 @@ struct ContentView: View {
                 SettingsViewContent(
                     learningPace: learningPaceBinding,
                     hanziScript: hanziScriptBinding,
-                    hanziTypeface: hanziTypefaceBinding
+                    hanziTypeface: hanziTypefaceBinding,
+                    calibrationSummary: calibrationSummary,
+                    startVocabularyCalibration: {
+                        isVocabularyCalibrationPresented = true
+                    }
                 )
             }
             .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
@@ -110,6 +115,7 @@ struct ContentView: View {
             deduplicateSyncedSeedData()
             moveToNextCard()
             prepareSpeech(for: activeNote)
+            presentVocabularyCalibrationIfNeeded()
         }
         .task {
             await periodicallyShowDueReviewsIfIdle()
@@ -122,6 +128,10 @@ struct ContentView: View {
         }
         .onChange(of: notes.count) { _, _ in
             deduplicateSyncedSeedData()
+            presentVocabularyCalibrationIfNeeded()
+        }
+        .onChange(of: settingsRecords.count) { _, _ in
+            presentVocabularyCalibrationIfNeeded()
         }
         .onChange(of: activeCardID) { _, _ in
             prepareSpeech(for: activeNote)
@@ -131,6 +141,14 @@ struct ContentView: View {
             showDueReviewsIfIdle()
         }
         .background(shakeUndoDetector)
+        .sheet(isPresented: $isVocabularyCalibrationPresented) {
+            VocabularyCalibrationView(
+                notes: notes,
+                displayPreferences: displayPreferences,
+                skip: skipVocabularyCalibration,
+                apply: applyVocabularyCalibration
+            )
+        }
     }
 
     @ViewBuilder
@@ -145,6 +163,16 @@ struct ContentView: View {
 
     private var settings: UserSettings? {
         settingsRecords.first
+    }
+
+    private var calibrationSummary: CalibrationSummary? {
+        guard let settings, settings.hasCompletedVocabularyCalibration else { return nil }
+        return CalibrationSummary(
+            estimatedKnownVocabulary: settings.calibratedVocabularyEstimate,
+            knownAnswers: settings.calibratedVocabularyKnownCount,
+            questionCount: settings.calibratedVocabularyQuestionCount,
+            calibratedAt: settings.calibratedAt
+        )
     }
 
     private var learningPaceBinding: Binding<LearningPace> {
@@ -297,6 +325,76 @@ struct ContentView: View {
         guard settingsRecords.isEmpty else { return }
         modelContext.insert(UserSettings())
         try? modelContext.save()
+    }
+
+    private func presentVocabularyCalibrationIfNeeded() {
+        guard let settings,
+              !settings.hasCompletedVocabularyCalibration,
+              !notes.isEmpty,
+              !cards.isEmpty,
+              reviews.isEmpty,
+              !isVocabularyCalibrationPresented else { return }
+
+        isVocabularyCalibrationPresented = true
+    }
+
+    private func skipVocabularyCalibration() {
+        ensureSettings()
+        settings?.hasCompletedVocabularyCalibration = true
+        settings?.calibratedAt = Date()
+        try? modelContext.save()
+        isVocabularyCalibrationPresented = false
+    }
+
+    private func applyVocabularyCalibration(_ responses: [VocabularyCalibrationResponse]) {
+        ensureSettings()
+
+        let estimate = VocabularyCalibrationPolicy.estimate(from: responses, deckCount: notes.count)
+        let knownSourceIDs = Set(
+            responses
+                .filter { $0.answer == .known }
+                .map(\.prompt.sourceID)
+        )
+        let now = Date()
+
+        for card in cards where knownSourceIDs.contains(card.noteSourceID) && card.fsrsCardData == nil {
+            guard let note = notes.first(where: { $0.sourceID == card.noteSourceID }),
+                  let review = try? FSRSReviewScheduler.review(
+                    cardData: nil,
+                    grade: .easy,
+                    desiredRetention: currentDesiredRetention(
+                        now: now,
+                        candidates: sessionCandidates(includeSuspended: true)
+                    ),
+                    now: now
+                  ) else { continue }
+
+            card.fsrsCardData = review.cardData
+            card.dueAt = review.dueAt
+            card.updatedAt = now
+            modelContext.insert(ReviewEvent(
+                cardKey: card.cardKey,
+                noteSourceID: note.sourceID,
+                grade: .easy,
+                interaction: .calibration,
+                reviewedAt: now,
+                scheduledDueAt: review.dueAt,
+                wasCorrect: true,
+                responseSeconds: 0
+            ))
+        }
+
+        settings?.hasCompletedVocabularyCalibration = true
+        settings?.calibratedVocabularyEstimate = estimate.estimatedKnownVocabulary
+        settings?.calibratedVocabularyKnownCount = estimate.knownAnswers
+        settings?.calibratedVocabularyQuestionCount = estimate.questionCount
+        settings?.calibratedAt = now
+
+        endServingPass()
+        try? modelContext.save()
+        isVocabularyCalibrationPresented = false
+        refreshBadgeSoon()
+        moveToNextCard()
     }
 
     private func deduplicateSyncedSeedData() {
@@ -2130,10 +2228,204 @@ private extension Date {
     }
 }
 
+private struct CalibrationSummary: Equatable {
+    var estimatedKnownVocabulary: Int
+    var knownAnswers: Int
+    var questionCount: Int
+    var calibratedAt: Date?
+}
+
+private struct VocabularyCalibrationView: View {
+    var notes: [VocabularyNote]
+    var displayPreferences: DisplayPreferences
+    var skip: () -> Void
+    var apply: ([VocabularyCalibrationResponse]) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentIndex = 0
+    @State private var responses: [VocabularyCalibrationResponse] = []
+    @State private var didRevealAnswer = false
+
+    private var prompts: [VocabularyCalibrationPrompt] {
+        VocabularyCalibrationPolicy.prompts(from: notes)
+    }
+
+    private var currentPrompt: VocabularyCalibrationPrompt? {
+        guard prompts.indices.contains(currentIndex) else { return nil }
+        return prompts[currentIndex]
+    }
+
+    private var estimate: VocabularyCalibrationEstimate {
+        VocabularyCalibrationPolicy.estimate(from: responses, deckCount: notes.count)
+    }
+
+    private var isComplete: Bool {
+        currentIndex >= prompts.count && !prompts.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 22) {
+                if prompts.isEmpty {
+                    ProgressView()
+                    Text("Preparing vocabulary...")
+                        .foregroundStyle(.secondary)
+                } else if isComplete {
+                    calibrationResultView
+                } else if let currentPrompt {
+                    calibrationQuestionView(currentPrompt)
+                }
+            }
+            .padding(28)
+            .frame(maxWidth: 620, maxHeight: .infinity)
+            .navigationTitle("Starting Vocabulary")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Skip") {
+                        skip()
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func calibrationQuestionView(_ prompt: VocabularyCalibrationPrompt) -> some View {
+        VStack(spacing: 20) {
+            VStack(spacing: 6) {
+                Text("\(currentIndex + 1) / \(prompts.count)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text("Do you recognize this vocabulary?")
+                    .font(.title3.weight(.semibold))
+            }
+
+            Spacer(minLength: 10)
+
+            VStack(spacing: 14) {
+                Text(displayPreferences.script.displayText(for: prompt.hanzi))
+                    .font(displayPreferences.typeface.displayFont(size: 86, script: displayPreferences.script))
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+
+                if didRevealAnswer {
+                    VStack(spacing: 4) {
+                        Text(prompt.pinyin)
+                            .font(.title3.weight(.semibold))
+                        Text(prompt.english)
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                    .transition(.opacity)
+                }
+
+                Button(didRevealAnswer ? "Hide answer" : "Reveal answer") {
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        didRevealAnswer.toggle()
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Spacer(minLength: 10)
+
+            VStack(spacing: 10) {
+                CalibrationAnswerButton(answer: .known, systemImage: "checkmark.circle") {
+                    record(.known, prompt: prompt)
+                }
+                CalibrationAnswerButton(answer: .unsure, systemImage: "questionmark.circle") {
+                    record(.unsure, prompt: prompt)
+                }
+                CalibrationAnswerButton(answer: .new, systemImage: "plus.circle") {
+                    record(.new, prompt: prompt)
+                }
+            }
+        }
+    }
+
+    private var calibrationResultView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "gauge.with.dots.needle.50percent")
+                .font(.system(size: 48))
+                .foregroundStyle(.teal)
+
+            VStack(spacing: 6) {
+                Text("\(estimate.estimatedKnownVocabulary)")
+                    .font(.system(size: 56, weight: .semibold, design: .rounded))
+                Text("estimated known vocabulary")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                ProgressMetric(title: "Known", value: "\(estimate.knownAnswers)", systemImage: "checkmark.circle")
+                ProgressMetric(title: "Unsure", value: "\(estimate.unsureAnswers)", systemImage: "questionmark.circle")
+                ProgressMetric(title: "New", value: "\(estimate.newAnswers)", systemImage: "plus.circle")
+            }
+
+            Text("\(estimate.confidenceLabel) estimate from \(estimate.questionCount) sampled words. Clementine will only mark the words you explicitly called Known.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            VStack(spacing: 10) {
+                Button {
+                    apply(responses)
+                    dismiss()
+                } label: {
+                    Label("Apply Calibration", systemImage: "checkmark")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+
+                Button {
+                    currentIndex = 0
+                    responses = []
+                    didRevealAnswer = false
+                } label: {
+                    Label("Retake Quiz", systemImage: "arrow.counterclockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
+        }
+    }
+
+    private func record(_ answer: VocabularyCalibrationAnswer, prompt: VocabularyCalibrationPrompt) {
+        responses.append(VocabularyCalibrationResponse(prompt: prompt, answer: answer))
+        didRevealAnswer = false
+        currentIndex += 1
+    }
+}
+
+private struct CalibrationAnswerButton: View {
+    var answer: VocabularyCalibrationAnswer
+    var systemImage: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(answer.title, systemImage: systemImage)
+                .font(.title3.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 48)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+    }
+}
+
 private struct SettingsViewContent: View {
     @Binding var learningPace: LearningPace
     @Binding var hanziScript: HanziScript
     @Binding var hanziTypeface: HanziTypeface
+    var calibrationSummary: CalibrationSummary?
+    var startVocabularyCalibration: () -> Void
 
     var body: some View {
         Form {
@@ -2169,6 +2461,28 @@ private struct SettingsViewContent: View {
 
             Section("Audio") {
                 LabeledContent("Voice", value: "System Mandarin")
+            }
+
+            Section("Starting Vocabulary") {
+                if let calibrationSummary {
+                    LabeledContent("Estimate", value: "\(calibrationSummary.estimatedKnownVocabulary)")
+                    LabeledContent(
+                        "Known in quiz",
+                        value: "\(calibrationSummary.knownAnswers) / \(calibrationSummary.questionCount)"
+                    )
+                } else {
+                    Text("Take a short quiz so Clementine can avoid treating words you already recognize as brand new.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    startVocabularyCalibration()
+                } label: {
+                    Label(
+                        calibrationSummary == nil ? "Estimate Starting Vocabulary" : "Retake Starting Quiz",
+                        systemImage: "gauge.with.dots.needle.50percent"
+                    )
+                }
             }
         }
         .navigationTitle("Settings")

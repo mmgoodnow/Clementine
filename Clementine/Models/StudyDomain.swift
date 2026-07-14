@@ -221,6 +221,7 @@ enum ReviewGrade: String, Codable, CaseIterable {
 enum ReviewInteraction: String, Codable {
     case multipleChoice
     case recall
+    case calibration
 }
 
 enum StudyInteractionMode: Equatable {
@@ -309,6 +310,147 @@ enum MultipleChoiceBuilder {
             hash &*= 1_099_511_628_211
         }
         return hash
+    }
+}
+
+enum VocabularyCalibrationAnswer: String, Codable, CaseIterable, Identifiable {
+    case known
+    case unsure
+    case new
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .known: "Known"
+        case .unsure: "Unsure"
+        case .new: "New"
+        }
+    }
+
+    var score: Double {
+        switch self {
+        case .known: 1
+        case .unsure: 0.35
+        case .new: 0
+        }
+    }
+}
+
+struct VocabularyCalibrationPrompt: Identifiable, Equatable {
+    var id: String { sourceID }
+    var sourceID: String
+    var deckIndex: Int
+    var hanzi: String
+    var pinyin: String
+    var english: String
+    var lesson: String?
+}
+
+struct VocabularyCalibrationResponse: Equatable {
+    var prompt: VocabularyCalibrationPrompt
+    var answer: VocabularyCalibrationAnswer
+}
+
+struct VocabularyCalibrationEstimate: Equatable {
+    var estimatedKnownVocabulary: Int
+    var knownAnswers: Int
+    var unsureAnswers: Int
+    var newAnswers: Int
+    var questionCount: Int
+    var deckCount: Int
+
+    var confidenceLabel: String {
+        switch questionCount {
+        case 0..<16: "Very rough"
+        case 16..<28: "Rough"
+        default: "Better"
+        }
+    }
+}
+
+enum VocabularyCalibrationPolicy {
+    static let defaultQuestionCount = 24
+
+    static func prompts(from notes: [VocabularyNote], count: Int = defaultQuestionCount) -> [VocabularyCalibrationPrompt] {
+        let orderedNotes = notes.sorted { lhs, rhs in
+            if lhs.sourceID != rhs.sourceID { return lhs.sourceID < rhs.sourceID }
+            return lhs.hanzi < rhs.hanzi
+        }
+        guard !orderedNotes.isEmpty else { return [] }
+
+        let sampleCount = min(count, orderedNotes.count)
+        var usedIndexes = Set<Int>()
+        var prompts: [VocabularyCalibrationPrompt] = []
+
+        for sampleIndex in 0..<sampleCount {
+            let percentile = (Double(sampleIndex) + 0.5) / Double(sampleCount)
+            var noteIndex = Int((percentile * Double(orderedNotes.count)).rounded(.down))
+            noteIndex = min(max(0, noteIndex), orderedNotes.count - 1)
+
+            while usedIndexes.contains(noteIndex), noteIndex + 1 < orderedNotes.count {
+                noteIndex += 1
+            }
+            while usedIndexes.contains(noteIndex), noteIndex > 0 {
+                noteIndex -= 1
+            }
+            guard usedIndexes.insert(noteIndex).inserted else { continue }
+
+            let note = orderedNotes[noteIndex]
+            prompts.append(VocabularyCalibrationPrompt(
+                sourceID: note.sourceID,
+                deckIndex: noteIndex,
+                hanzi: note.hanzi,
+                pinyin: note.pinyin,
+                english: note.english,
+                lesson: note.lesson
+            ))
+        }
+
+        return prompts.sorted { $0.deckIndex < $1.deckIndex }
+    }
+
+    static func estimate(from responses: [VocabularyCalibrationResponse], deckCount: Int) -> VocabularyCalibrationEstimate {
+        let sortedResponses = responses.sorted { $0.prompt.deckIndex < $1.prompt.deckIndex }
+        guard deckCount > 0, !sortedResponses.isEmpty else {
+            return VocabularyCalibrationEstimate(
+                estimatedKnownVocabulary: 0,
+                knownAnswers: 0,
+                unsureAnswers: 0,
+                newAnswers: 0,
+                questionCount: 0,
+                deckCount: deckCount
+            )
+        }
+
+        var weightedKnown = 0.0
+        for (index, response) in sortedResponses.enumerated() {
+            let deckIndex = response.prompt.deckIndex
+            let lowerBound: Double
+            if index == 0 {
+                lowerBound = 0
+            } else {
+                lowerBound = Double(sortedResponses[index - 1].prompt.deckIndex + deckIndex) / 2
+            }
+
+            let upperBound: Double
+            if index == sortedResponses.count - 1 {
+                upperBound = Double(deckCount)
+            } else {
+                upperBound = Double(deckIndex + sortedResponses[index + 1].prompt.deckIndex) / 2
+            }
+
+            weightedKnown += max(0, upperBound - lowerBound) * response.answer.score
+        }
+
+        return VocabularyCalibrationEstimate(
+            estimatedKnownVocabulary: min(deckCount, max(0, Int(weightedKnown.rounded()))),
+            knownAnswers: sortedResponses.filter { $0.answer == .known }.count,
+            unsureAnswers: sortedResponses.filter { $0.answer == .unsure }.count,
+            newAnswers: sortedResponses.filter { $0.answer == .new }.count,
+            questionCount: sortedResponses.count,
+            deckCount: deckCount
+        )
     }
 }
 

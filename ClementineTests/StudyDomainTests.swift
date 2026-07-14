@@ -1339,6 +1339,57 @@ final class StudyDomainTests: XCTestCase {
         XCTAssertEqual(batchIDs.count, 30)
     }
 
+    func testVocabularyCalibrationPromptsSampleAcrossDeck() {
+        let notes = (0..<100).map { index in
+            VocabularyNote(
+                sourceID: String(format: "hsk-%04d", index),
+                deckID: "test",
+                hanzi: "\(index)",
+                pinyin: "pinyin",
+                english: "english"
+            )
+        }
+
+        let prompts = VocabularyCalibrationPolicy.prompts(from: notes, count: 10)
+
+        XCTAssertEqual(prompts.count, 10)
+        XCTAssertEqual(prompts.map(\.deckIndex), prompts.map(\.deckIndex).sorted())
+        XCTAssertLessThan(prompts.first?.deckIndex ?? 100, 10)
+        XCTAssertGreaterThan(prompts.last?.deckIndex ?? 0, 85)
+    }
+
+    func testVocabularyCalibrationEstimateWeightsSampledRegions() {
+        let prompts = [10, 30, 50, 70, 90].map { index in
+            VocabularyCalibrationPrompt(
+                sourceID: "hsk-\(index)",
+                deckIndex: index,
+                hanzi: "\(index)",
+                pinyin: "pinyin",
+                english: "english",
+                lesson: nil
+            )
+        }
+        let responses = zip(
+            prompts,
+            [
+                VocabularyCalibrationAnswer.known,
+                .known,
+                .unsure,
+                .new,
+                .new
+            ]
+        ).map { prompt, answer in
+            VocabularyCalibrationResponse(prompt: prompt, answer: answer)
+        }
+
+        let estimate = VocabularyCalibrationPolicy.estimate(from: responses, deckCount: 100)
+
+        XCTAssertEqual(estimate.knownAnswers, 2)
+        XCTAssertEqual(estimate.unsureAnswers, 1)
+        XCTAssertEqual(estimate.newAnswers, 2)
+        XCTAssertEqual(estimate.estimatedKnownVocabulary, 47)
+    }
+
     private func candidate(
         id: UUID,
         noteSourceID: String,
