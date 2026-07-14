@@ -6,6 +6,11 @@
 	<array>
 		<string>com.mmgoodnow.Clementine.badge-refresh</string>
 	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Fonts/NotoSerifCJKsc-Regular.otf</string>
+		<string>NotoSerifCJKsc-Regular.otf</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

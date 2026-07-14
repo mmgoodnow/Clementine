@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import CoreText
 
 #if os(iOS)
 import UIKit
@@ -141,6 +142,8 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
     }
 
     func displayFont(size: CGFloat, script: HanziScript) -> Font {
+        _ = HanziFontRegistry.registerBundledFonts
+
         for fontName in fontNames(for: script) {
             #if os(iOS)
             if let font = UIFont(name: fontName, size: size) {
@@ -167,6 +170,7 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
         switch (self, script) {
         case (.serif, .simplified):
             [
+                "NotoSerifCJKsc-Regular",
                 "STSongti-SC-Bold",
                 "STSongti-SC-Regular",
                 "STSongti-SC-Light",
@@ -177,6 +181,7 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
             ]
         case (.serif, .traditional):
             [
+                "NotoSerifCJKsc-Regular",
                 "STSongti-TC-Bold",
                 "STSongti-TC-Regular",
                 "STSongti-TC-Light",
@@ -191,6 +196,19 @@ enum HanziTypeface: String, Codable, CaseIterable, Identifiable {
             ["PingFangTC-Semibold", "PingFangTC-Regular", "PingFang TC", "Heiti TC"]
         }
     }
+}
+
+private enum HanziFontRegistry {
+    static let registerBundledFonts: Void = {
+        let fontURL = Bundle.main.url(forResource: "NotoSerifCJKsc-Regular", withExtension: "otf", subdirectory: "Fonts")
+            ?? Bundle.main.url(forResource: "NotoSerifCJKsc-Regular", withExtension: "otf")
+
+        guard let fontURL else {
+            return
+        }
+
+        CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
+    }()
 }
 
 enum ReviewGrade: String, Codable, CaseIterable {
