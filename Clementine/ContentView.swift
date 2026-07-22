@@ -1462,10 +1462,26 @@ private struct ProgressViewContent: View {
     var reduceActiveLoad: ([UUID]) -> Void
     var resumeSuspendedCards: ([UUID]) -> Void
 
-    var body: some View {
-        let snapshot = progressSnapshot
+    @State private var snapshot: ProgressSnapshot?
 
+    var body: some View {
         List {
+            if let snapshot {
+                progressContent(snapshot: snapshot)
+            } else {
+                Section {
+                    EmptyChartMessage(text: "Preparing progress...")
+                }
+            }
+        }
+        .navigationTitle("Progress")
+        .task(id: progressSnapshotSignature) {
+            refreshProgressSnapshot()
+        }
+    }
+
+    @ViewBuilder
+    private func progressContent(snapshot: ProgressSnapshot) -> some View {
             Section {
                 HStack(spacing: 14) {
                     ProgressMetric(title: "Introduced", value: "\(snapshot.introducedVocabularyCount)", systemImage: "character.book.closed")
@@ -1681,8 +1697,20 @@ private struct ProgressViewContent: View {
                 LabeledContent("Store", value: ClementineModelContainer.usesCloudKitSync ? "iCloud Private Database" : "Local Debug Store")
                 LabeledContent("Container", value: ClementineModelContainer.iCloudContainerIdentifier)
             }
-        }
-        .navigationTitle("Progress")
+    }
+
+    private var progressSnapshotSignature: String {
+        return [
+            "\(notes.count)",
+            "\(cards.count)",
+            "\(reviews.count)",
+            "\(cardStateEvents.count)",
+            learningPace.rawValue
+        ].joined(separator: "-")
+    }
+
+    private func refreshProgressSnapshot() {
+        snapshot = progressSnapshot
     }
 
     private var progressSnapshot: ProgressSnapshot {
@@ -2072,12 +2100,18 @@ private struct IntroducedVocabularyEntry {
         return IntroducedVocabularyDueBucket(dueAt: dueAt, isSuspended: false, now: referenceDate)
     }
 
-	    private func isSuspended(on referenceDate: Date) -> Bool {
-	        if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
-	            return event.isSuspended
-	        }
+    private func isSuspended(on referenceDate: Date) -> Bool {
+        if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
+            if event.isSuspended,
+               !card.isSuspended,
+               card.updatedAt >= event.changedAt,
+               card.updatedAt <= referenceDate {
+                return false
+            }
+            return event.isSuspended
+        }
 
-	        guard card.isSuspended else { return false }
+        guard card.isSuspended else { return false }
 	        let suspendedAt = card.suspendedAt ?? inferredLegacySuspendedAt ?? card.updatedAt
 	        return suspendedAt <= referenceDate
 	    }
