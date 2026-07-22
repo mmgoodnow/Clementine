@@ -682,6 +682,7 @@ struct ContentView: View {
             ))
         }
 
+        try? modelContext.save()
         endServingPass()
         scheduleModelSave()
         refreshBadgeSoon()
