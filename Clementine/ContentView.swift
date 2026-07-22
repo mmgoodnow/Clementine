@@ -464,6 +464,7 @@ struct ContentView: View {
                     changedAt: now,
                     isSuspended: false
                 ))
+                try? modelContext.save()
                 scheduleModelSave()
             }
             activeInteractionMode = interactionMode(for: selectedCard)
@@ -1866,7 +1867,7 @@ private struct ProgressViewContent: View {
             .mapValues { events in
                 events.sorted { $0.reviewedAt < $1.reviewedAt }
             }
-	        let stateEventsBySourceID = Dictionary(grouping: cardStateEvents.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+	        let stateEventsByCardKey = Dictionary(grouping: cardStateEvents.filter { !$0.cardKey.isEmpty }, by: \.cardKey)
 	            .mapValues { events in
 	                events.sorted { $0.changedAt < $1.changedAt }
 	            }
@@ -1886,7 +1887,7 @@ private struct ProgressViewContent: View {
 	                introducedDay: introducedDay,
 	                card: card,
 	                reviews: reviewEventsBySourceID[sourceID] ?? [],
-	                stateEvents: stateEventsBySourceID[sourceID] ?? [],
+	                stateEvents: stateEventsByCardKey[card.cardKey] ?? [],
 	                inferredLegacySuspendedAt: inferredLegacySuspendedAt
 	            )
 	        }

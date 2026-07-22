@@ -161,6 +161,7 @@ enum SeedDeduplicator {
         let cards = try context.fetch(FetchDescriptor<StudyCard>())
         let grouped = Dictionary(grouping: cards.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
         let reviewEvents = try context.fetch(FetchDescriptor<ReviewEvent>())
+        let cardStateEvents = try context.fetch(FetchDescriptor<CardStateEvent>())
         var changedCount = 0
 
         for (noteSourceID, cardsForNote) in grouped {
@@ -191,6 +192,11 @@ enum SeedDeduplicator {
             }
 
             for event in reviewEvents where event.noteSourceID == noteSourceID && event.cardKey != canonicalKey {
+                event.cardKey = canonicalKey
+                changedCount += 1
+            }
+
+            for event in cardStateEvents where event.noteSourceID == noteSourceID && event.cardKey != canonicalKey {
                 event.cardKey = canonicalKey
                 changedCount += 1
             }

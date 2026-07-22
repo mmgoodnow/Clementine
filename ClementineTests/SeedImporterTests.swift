@@ -231,4 +231,61 @@ final class SeedImporterTests: XCTestCase {
         XCTAssertEqual(cards.first?.fsrsCardData, Data([9, 8, 7]))
         XCTAssertEqual(reviews.map(\.cardKey), ["test-1#hanziToMeaning"])
     }
+
+    func testDeduplicatorConsolidatesCardStateEventsIntoCanonicalVocabularyCard() throws {
+        let container = try ClementineModelContainer.make(inMemory: true)
+        let context = container.mainContext
+        let older = Date(timeIntervalSince1970: 1_000)
+        let newer = Date(timeIntervalSince1970: 2_000)
+
+        context.insert(
+            VocabularyNote(
+                sourceID: "test-1",
+                deckID: "test",
+                hanzi: "爱",
+                pinyin: "ài",
+                english: "love",
+                createdAt: older,
+                updatedAt: older
+            )
+        )
+
+        let meaningCard = StudyCard(noteSourceID: "test-1", kind: .hanziToMeaning, dueAt: older)
+        meaningCard.updatedAt = older
+        context.insert(meaningCard)
+
+        let pinyinCard = StudyCard(noteSourceID: "test-1", kind: .hanziToPinyin, dueAt: newer)
+        pinyinCard.updatedAt = newer
+        pinyinCard.fsrsCardData = Data([9, 8, 7])
+        context.insert(pinyinCard)
+
+        context.insert(
+            CardStateEvent(
+                cardKey: "test-1#hanziToPinyin",
+                noteSourceID: "test-1",
+                changedAt: older,
+                isSuspended: true
+            )
+        )
+        context.insert(
+            CardStateEvent(
+                cardKey: "test-1#hanziToPinyin",
+                noteSourceID: "test-1",
+                changedAt: newer,
+                isSuspended: false
+            )
+        )
+
+        try context.save()
+
+        XCTAssertEqual(try SeedDeduplicator.removeDuplicateSeedRecords(context: context), 3)
+
+        let cards = try context.fetch(FetchDescriptor<StudyCard>())
+        let stateEvents = try context.fetch(FetchDescriptor<CardStateEvent>(sortBy: [SortDescriptor(\.changedAt)]))
+
+        XCTAssertEqual(cards.count, 1)
+        XCTAssertEqual(cards.first?.cardKey, "test-1#hanziToMeaning")
+        XCTAssertEqual(stateEvents.map(\.cardKey), ["test-1#hanziToMeaning", "test-1#hanziToMeaning"])
+        XCTAssertEqual(stateEvents.map(\.isSuspended), [true, false])
+    }
 }
