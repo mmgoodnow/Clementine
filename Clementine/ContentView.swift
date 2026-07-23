@@ -3,6 +3,9 @@ import Charts
 import SwiftData
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+#endif
 #if os(iOS)
 import UIKit
 #endif
@@ -1463,6 +1466,7 @@ private struct ProgressViewContent: View {
     var resumeSuspendedCards: ([UUID]) -> Void
 
     @State private var snapshot: ProgressSnapshot?
+    @State private var copiedDebugReport = false
 
     var body: some View {
         List {
@@ -1642,6 +1646,21 @@ private struct ProgressViewContent: View {
                 }
             }
 
+            #if DEBUG
+            Section("Chart Debug") {
+                Text(snapshot.debugReport.summary)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Button {
+                    copyToPasteboard(snapshot.debugReport.fullText)
+                    copiedDebugReport = true
+                } label: {
+                    Label(copiedDebugReport ? "Copied Debug Report" : "Copy Debug Report", systemImage: "doc.on.doc")
+                }
+            }
+            #endif
+
             Section("Accuracy") {
                 if snapshot.accuracyPoints.isEmpty {
                     EmptyChartMessage(text: "Accuracy will appear after reviews.")
@@ -1775,6 +1794,7 @@ private struct ProgressViewContent: View {
             reviews: loadSheddingReviews,
             now: now
         )
+        let introducedVocabularyPoints = introducedVocabularyPoints(now: now)
         let resumeSuspendedCardIDs = cards
             .filter(\.isSuspended)
             .sorted {
@@ -1798,10 +1818,82 @@ private struct ProgressViewContent: View {
                 reviewHistoryEvents: reviewHistoryEvents,
                 now: now
             ),
-            introducedVocabularyPoints: introducedVocabularyPoints(now: now),
+            introducedVocabularyPoints: introducedVocabularyPoints,
             accuracyPoints: accuracyPoints,
-            reviewMixSegments: reviewMixSegments
+            reviewMixSegments: reviewMixSegments,
+            debugReport: progressDebugReport(
+                introducedVocabularyPoints: introducedVocabularyPoints,
+                now: now
+            )
         )
+    }
+
+    private func copyToPasteboard(_ text: String) {
+#if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+#else
+        UIPasteboard.general.string = text
+#endif
+    }
+
+    private func progressDebugReport(introducedVocabularyPoints: [VocabularyPoint], now: Date) -> ProgressDebugReport {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        let sourceIDsWithEvents = Set(cardStateEvents.map(\.noteSourceID).filter { !$0.isEmpty })
+        let currentSuspendedCards = cards.filter(\.isSuspended)
+        let currentSuspendedWithEvents = currentSuspendedCards.filter { sourceIDsWithEvents.contains($0.noteSourceID) }.count
+        let currentSuspendedWithoutEvents = currentSuspendedCards.count - currentSuspendedWithEvents
+        let suspendEvents = cardStateEvents.filter(\.isSuspended).count
+        let resumeEvents = cardStateEvents.filter { !$0.isSuspended }.count
+        let eventSourceCount = sourceIDsWithEvents.count
+        let eventCardKeyCount = Set(cardStateEvents.map(\.cardKey).filter { !$0.isEmpty }).count
+
+        let pointsByDay = Dictionary(grouping: introducedVocabularyPoints) { point in
+            Calendar.current.startOfDay(for: point.day)
+        }
+        let dayLines = pointsByDay.keys.sorted().map { day in
+            let points = pointsByDay[day] ?? []
+            let countsByBucket = Dictionary(uniqueKeysWithValues: points.map { ($0.bucket, $0.count) })
+            let buckets = IntroducedVocabularyDueBucket.stackOrder.map { bucket in
+                "\(bucket.label)=\(countsByBucket[bucket] ?? 0)"
+            }
+            return "\(dateFormatter.string(from: day)): \(buckets.joined(separator: ", "))"
+        }
+
+        let latestEventLines = cardStateEvents
+            .sorted { $0.changedAt > $1.changedAt }
+            .prefix(20)
+            .map { event in
+                let day = dateFormatter.string(from: event.changedAt)
+                let state = event.isSuspended ? "suspend" : "resume"
+                let sourceID = event.noteSourceID.isEmpty ? "(empty source)" : event.noteSourceID
+                let cardKey = event.cardKey.isEmpty ? "(empty key)" : event.cardKey
+                return "\(day) \(state) \(sourceID) \(cardKey)"
+            }
+
+        let summary = [
+            "state events: \(cardStateEvents.count) (\(suspendEvents) suspend, \(resumeEvents) resume)",
+            "event sources: \(eventSourceCount), event card keys: \(eventCardKeyCount)",
+            "current suspended: \(currentSuspendedCards.count) (\(currentSuspendedWithEvents) with events, \(currentSuspendedWithoutEvents) legacy/no events)",
+            "chart days: \(pointsByDay.count)"
+        ].joined(separator: "\n")
+
+        let fullText = ([
+            "Clementine Progress Chart Debug",
+            "Generated: \(now.formatted(date: .numeric, time: .standard))",
+            "",
+            summary,
+            "",
+            "Introduced Vocabulary Buckets",
+            dayLines.isEmpty ? "(none)" : dayLines.joined(separator: "\n"),
+            "",
+            "Latest State Events",
+            latestEventLines.isEmpty ? "(none)" : latestEventLines.joined(separator: "\n")
+        ] as [String]).joined(separator: "\n")
+
+        return ProgressDebugReport(summary: summary, fullText: fullText)
     }
 
     private var recentAgainCountsByCardKey: [String: Int] {
@@ -1903,16 +1995,6 @@ private struct ProgressViewContent: View {
             .mapValues { events in
                 events.sorted { $0.changedAt < $1.changedAt }
             }
-        let sourceIDsWithStateEvents = Set(cardStateEvents.map(\.noteSourceID))
-        let inferredLegacySuspendedAt = introducedCardsBySourceID.values
-            .filter { card in
-                card.isSuspended
-                    && card.suspendedAt == nil
-                    && !sourceIDsWithStateEvents.contains(card.noteSourceID)
-            }
-            .map(\.updatedAt)
-            .max()
-
         let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
             guard let card = introducedCardsBySourceID[sourceID] else { return nil }
             let stateEvents = stateEventsBySourceID[sourceID] ?? stateEventsByCardKey[card.cardKey] ?? []
@@ -1920,8 +2002,7 @@ private struct ProgressViewContent: View {
                 introducedDay: introducedDay,
                 card: card,
                 reviews: reviewEventsBySourceID[sourceID] ?? [],
-                stateEvents: stateEvents,
-                inferredLegacySuspendedAt: inferredLegacySuspendedAt
+                stateEvents: stateEvents
             )
         }
 
@@ -2087,6 +2168,12 @@ private struct ProgressSnapshot {
     var introducedVocabularyPoints: [VocabularyPoint]
     var accuracyPoints: [AccuracyPoint]
     var reviewMixSegments: [ReviewMixSegment]
+    var debugReport: ProgressDebugReport
+}
+
+private struct ProgressDebugReport {
+    var summary: String
+    var fullText: String
 }
 
 private struct IntroducedVocabularyEntry {
@@ -2094,10 +2181,9 @@ private struct IntroducedVocabularyEntry {
 	var card: StudyCard
 	var reviews: [ReviewEvent]
 	var stateEvents: [CardStateEvent]
-    var inferredLegacySuspendedAt: Date?
 
     func bucket(on referenceDate: Date, now: Date) -> IntroducedVocabularyDueBucket {
-        if isSuspended(on: referenceDate) {
+        if isSuspended(on: referenceDate, now: now) {
             return .suspended
         }
 
@@ -2105,7 +2191,7 @@ private struct IntroducedVocabularyEntry {
         return IntroducedVocabularyDueBucket(dueAt: dueAt, isSuspended: false, now: referenceDate)
     }
 
-    private func isSuspended(on referenceDate: Date) -> Bool {
+    private func isSuspended(on referenceDate: Date, now: Date) -> Bool {
         if let event = stateEvents.last(where: { $0.changedAt <= referenceDate }) {
             if event.isSuspended,
                !card.isSuspended,
@@ -2117,9 +2203,11 @@ private struct IntroducedVocabularyEntry {
         }
 
         guard card.isSuspended else { return false }
-	        let suspendedAt = card.suspendedAt ?? inferredLegacySuspendedAt ?? card.updatedAt
-	        return suspendedAt <= referenceDate
-	    }
+        guard let suspendedAt = card.suspendedAt else {
+            return Calendar.current.isDate(referenceDate, inSameDayAs: now)
+        }
+        return suspendedAt <= referenceDate
+    }
 
     private func dueAt(on referenceDate: Date, now: Date) -> Date {
         if let review = reviews.last(where: { $0.reviewedAt <= referenceDate }),
