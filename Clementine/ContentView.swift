@@ -1740,6 +1740,32 @@ private struct ProgressViewContent: View {
         snapshot = progressSnapshot
     }
 
+    private var normalizedCardStateEvents: [CardStateEvent] {
+        let groupedEvents = Dictionary(grouping: cardStateEvents) { event in
+            if !event.noteSourceID.isEmpty {
+                return "source:\(event.noteSourceID)"
+            }
+            return "card:\(event.cardKey)"
+        }
+
+        return groupedEvents.values.flatMap { timeline in
+            var normalizedEvents: [CardStateEvent] = []
+            var lastState: Bool?
+
+            for event in timeline.sorted(by: { lhs, rhs in
+                if lhs.changedAt != rhs.changedAt { return lhs.changedAt < rhs.changedAt }
+                if lhs.isSuspended != rhs.isSuspended { return lhs.isSuspended && !rhs.isSuspended }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }) {
+                guard lastState != event.isSuspended else { continue }
+                normalizedEvents.append(event)
+                lastState = event.isSuspended
+            }
+
+            return normalizedEvents
+        }
+    }
+
     private var progressSnapshot: ProgressSnapshot {
         let now = Date()
         let recentAgainCounts = recentAgainCountsByCardKey
@@ -1802,7 +1828,11 @@ private struct ProgressViewContent: View {
             reviews: loadSheddingReviews,
             now: now
         )
-        let introducedVocabularyPoints = introducedVocabularyPoints(now: now)
+        let semanticStateEvents = normalizedCardStateEvents
+        let introducedVocabularyPoints = introducedVocabularyPoints(
+            now: now,
+            cardStateEvents: semanticStateEvents
+        )
         let resumeSuspendedCardIDs = cards
             .filter(\.isSuspended)
             .sorted {
@@ -1831,6 +1861,7 @@ private struct ProgressViewContent: View {
             reviewMixSegments: reviewMixSegments,
             debugReport: progressDebugReport(
                 introducedVocabularyPoints: introducedVocabularyPoints,
+                cardStateEvents: semanticStateEvents,
                 now: now
             )
         )
@@ -1845,7 +1876,11 @@ private struct ProgressViewContent: View {
 #endif
     }
 
-    private func progressDebugReport(introducedVocabularyPoints: [VocabularyPoint], now: Date) -> ProgressDebugReport {
+    private func progressDebugReport(
+        introducedVocabularyPoints: [VocabularyPoint],
+        cardStateEvents: [CardStateEvent],
+        now: Date
+    ) -> ProgressDebugReport {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
 
@@ -1960,7 +1995,7 @@ private struct ProgressViewContent: View {
         return count
     }
 
-    private func introducedVocabularyPoints(now: Date) -> [VocabularyPoint] {
+    private func introducedVocabularyPoints(now: Date, cardStateEvents: [CardStateEvent]) -> [VocabularyPoint] {
         guard !reviews.isEmpty else { return [] }
 
         let calendar = Calendar.current
@@ -2211,9 +2246,9 @@ private struct IntroducedVocabularyEntry {
         }
 
         guard card.isSuspended else { return false }
-        let suspendedAt = card.suspendedAt
-            ?? reviews.last?.reviewedAt
-            ?? now
+        guard let suspendedAt = card.suspendedAt else {
+            return Calendar.current.isDate(referenceDate, inSameDayAs: now)
+        }
         return suspendedAt <= referenceDate
     }
 
