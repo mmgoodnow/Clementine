@@ -3,16 +3,15 @@ import SQLite3
 import SwiftData
 
 enum LegacySuspensionHistoryRepair {
+    private static let suspensionFeatureReferenceTimestamp: TimeInterval = 804_880_800
+    private static let minimumBulkTransactionSourceCount = 20
+
     static func repair(context: ModelContext) throws -> Int {
         let cards = try context.fetch(FetchDescriptor<StudyCard>())
         let fetchedStateEvents = try context.fetch(FetchDescriptor<CardStateEvent>(
             sortBy: [SortDescriptor(\.changedAt)]
         ))
         let (stateEvents, removedDuplicateEventCount) = compactStateEvents(fetchedStateEvents, context: context)
-        let suspendEventsBySourceID = Dictionary(
-            grouping: stateEvents.filter { $0.isSuspended && !$0.noteSourceID.isEmpty },
-            by: \.noteSourceID
-        )
         let firstResumeBySourceID = Dictionary(
             grouping: stateEvents.filter { !$0.isSuspended && !$0.noteSourceID.isEmpty },
             by: \.noteSourceID
@@ -29,25 +28,45 @@ enum LegacySuspensionHistoryRepair {
             }
         )
 
-        let inferredDates = inferSuspensionDatesFromPersistentHistory()
-        guard !inferredDates.isEmpty else { return 0 }
+        let inferredDates = inferSuspensionDatesFromBulkPersistentHistory()
+        let suspensionFeatureReferenceDate = Date(
+            timeIntervalSinceReferenceDate: suspensionFeatureReferenceTimestamp
+        )
 
         var repairedCount = 0
+        var eventsToInsert: [CardStateEvent] = []
+        var eventIDsToDelete = Set<UUID>()
+        let suspendEventsBySourceID = Dictionary(
+            grouping: stateEvents.filter { $0.isSuspended && !$0.noteSourceID.isEmpty },
+            by: \.noteSourceID
+        )
+
+        for events in suspendEventsBySourceID.values {
+            for event in events where event.changedAt < suspensionFeatureReferenceDate {
+                eventIDsToDelete.insert(event.id)
+            }
+        }
+
         for (sourceID, card) in cardsBySourceID {
             guard let suspendedAt = inferredDates[sourceID] else { continue }
 
-            let alreadyHasMatchingSuspendEvent = suspendEventsBySourceID[sourceID, default: []].contains { event in
-                if let firstResume = firstResumeBySourceID[sourceID] {
-                    return event.changedAt <= firstResume
-                }
-                return true
+            let firstResume = firstResumeBySourceID[sourceID]
+            let firstSegmentSuspendEvents = suspendEventsBySourceID[sourceID, default: []].filter { event in
+                guard let firstResume else { return true }
+                return event.changedAt <= firstResume
             }
-            guard !alreadyHasMatchingSuspendEvent else { continue }
+            let hasCorrectedEvent = firstSegmentSuspendEvents.contains { event in
+                abs(event.changedAt.timeIntervalSince(suspendedAt)) < 1
+            }
+            guard !hasCorrectedEvent else { continue }
 
-            if card.isSuspended {
+            for event in firstSegmentSuspendEvents {
+                eventIDsToDelete.insert(event.id)
+            }
+            if card.isSuspended, firstResume == nil {
                 card.suspendedAt = suspendedAt
             }
-            context.insert(CardStateEvent(
+            eventsToInsert.append(CardStateEvent(
                 cardKey: card.cardKey,
                 noteSourceID: sourceID,
                 changedAt: suspendedAt,
@@ -56,11 +75,18 @@ enum LegacySuspensionHistoryRepair {
             repairedCount += 1
         }
 
-        if repairedCount > 0 || removedDuplicateEventCount > 0 {
+        for event in stateEvents where eventIDsToDelete.contains(event.id) {
+            context.delete(event)
+        }
+        for event in eventsToInsert {
+            context.insert(event)
+        }
+
+        if repairedCount > 0 || removedDuplicateEventCount > 0 || !eventIDsToDelete.isEmpty {
             try context.save()
         }
 
-        return repairedCount + removedDuplicateEventCount
+        return repairedCount + removedDuplicateEventCount + eventIDsToDelete.count
     }
 
     private static func compactStateEvents(
@@ -97,7 +123,7 @@ enum LegacySuspensionHistoryRepair {
         return (keptEvents, removedCount)
     }
 
-    private static func inferSuspensionDatesFromPersistentHistory() -> [String: Date] {
+    private static func inferSuspensionDatesFromBulkPersistentHistory() -> [String: Date] {
         guard FileManager.default.fileExists(atPath: storeURL.path) else { return [:] }
 
         var database: OpaquePointer?
@@ -108,7 +134,28 @@ enum LegacySuspensionHistoryRepair {
         defer { sqlite3_close(database) }
 
         let sql = """
-        WITH first_resume AS (
+        WITH source_updates AS (
+            SELECT
+                t.Z_PK AS transaction_id,
+                t.ZTIMESTAMP AS timestamp,
+                c.ZNOTESOURCEID AS source
+            FROM ATRANSACTION t
+            JOIN ACHANGE ch
+              ON ch.ZTRANSACTIONID = t.Z_PK
+             AND ch.ZENTITY = 4
+             AND ch.ZCHANGETYPE = 1
+            JOIN ZSTUDYCARD c
+              ON c.Z_PK = ch.ZENTITYPK
+            WHERE t.ZTIMESTAMP >= \(suspensionFeatureReferenceTimestamp)
+              AND c.ZNOTESOURCEID != ''
+        ),
+        bulk_transactions AS (
+            SELECT transaction_id, timestamp
+            FROM source_updates
+            GROUP BY transaction_id
+            HAVING COUNT(DISTINCT source) >= \(minimumBulkTransactionSourceCount)
+        ),
+        first_resume AS (
             SELECT ZNOTESOURCEID AS source, MIN(ZCHANGEDAT) AS resume_at
             FROM ZCARDSTATEEVENT
             WHERE ZISSUSPENDED = 0
@@ -119,37 +166,24 @@ enum LegacySuspensionHistoryRepair {
             SELECT
                 c.Z_PK AS card_pk,
                 c.ZNOTESOURCEID AS source,
-                fr.resume_at AS upper_bound,
-                MAX(r.ZREVIEWEDAT) AS last_review
+                fr.resume_at AS upper_bound
             FROM ZSTUDYCARD c
             LEFT JOIN first_resume fr
               ON fr.source = c.ZNOTESOURCEID
-            LEFT JOIN ZREVIEWEVENT r ON r.ZNOTESOURCEID = c.ZNOTESOURCEID
-                AND (fr.resume_at IS NULL OR r.ZREVIEWEDAT <= fr.resume_at)
             WHERE (
                     c.ZISSUSPENDED = 1
                     OR fr.resume_at IS NOT NULL
                 )
               AND c.ZNOTESOURCEID != ''
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM ZCARDSTATEEVENT e
-                  WHERE e.ZNOTESOURCEID = c.ZNOTESOURCEID
-                    AND e.ZISSUSPENDED = 1
-                    AND (fr.resume_at IS NULL OR e.ZCHANGEDAT <= fr.resume_at)
-              )
             GROUP BY c.Z_PK
         )
-        SELECT cc.source, MIN(t.ZTIMESTAMP) AS inferred_suspended_at
+        SELECT cc.source, MIN(su.timestamp) AS inferred_suspended_at
         FROM candidate_cards cc
-        JOIN ACHANGE ch
-          ON ch.ZENTITY = 4
-         AND ch.ZENTITYPK = cc.card_pk
-         AND ch.ZCHANGETYPE = 1
-        JOIN ATRANSACTION t
-          ON t.Z_PK = ch.ZTRANSACTIONID
-        WHERE (cc.last_review IS NULL OR t.ZTIMESTAMP >= cc.last_review)
-          AND (cc.upper_bound IS NULL OR t.ZTIMESTAMP <= cc.upper_bound)
+        JOIN source_updates su
+          ON su.source = cc.source
+        JOIN bulk_transactions bt
+          ON bt.transaction_id = su.transaction_id
+        WHERE (cc.upper_bound IS NULL OR su.timestamp <= cc.upper_bound)
         GROUP BY cc.source
         """
 
