@@ -1620,25 +1620,25 @@ private struct ProgressViewContent: View {
                 if snapshot.introducedVocabularyPoints.isEmpty {
                     EmptyChartMessage(text: "Introduced vocabulary will appear after reviews.")
                 } else {
-	                    Chart(snapshot.introducedVocabularyPoints) { point in
-	                        BarMark(
-	                            x: .value("Day", point.day, unit: .day),
-	                            y: .value("Introduced", point.count),
-	                            stacking: .standard
-	                        )
-	                        .foregroundStyle(by: .value("State", point.bucket.label))
-	                    }
-	                    .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
-	                    .chartLegend(.hidden)
-	                    .chartYAxis {
-	                        AxisMarks(position: .leading)
-	                    }
-	                    .frame(height: 180)
-	                    .accessibilityLabel("Cumulative introduced vocabulary grouped by historical state")
-	                    IntroducedVocabularyLegend()
-	                    Text("Cumulative vocabulary introduced by each day. Colors show each card's state on that day.")
-	                        .font(.footnote)
-	                        .foregroundStyle(.secondary)
+                    Chart(snapshot.introducedVocabularyPoints) { point in
+                        BarMark(
+                            x: .value("Day", point.day, unit: .day),
+                            y: .value("Introduced", point.count),
+                            stacking: .standard
+                        )
+                        .foregroundStyle(by: .value("State", point.bucket.label))
+                    }
+                    .chartForegroundStyleScale(IntroducedVocabularyDueBucket.chartStyles)
+                    .chartLegend(.hidden)
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .frame(height: 180)
+                    .accessibilityLabel("Cumulative introduced vocabulary grouped by historical state")
+                    IntroducedVocabularyLegend()
+                    Text("Cumulative vocabulary introduced by each day. Colors show each card's state on that day.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -1895,30 +1895,35 @@ private struct ProgressViewContent: View {
             .mapValues { events in
                 events.sorted { $0.reviewedAt < $1.reviewedAt }
             }
-	        let stateEventsByCardKey = Dictionary(grouping: cardStateEvents.filter { !$0.cardKey.isEmpty }, by: \.cardKey)
-	            .mapValues { events in
-	                events.sorted { $0.changedAt < $1.changedAt }
-	            }
-	        let sourceIDsWithStateEvents = Set(cardStateEvents.map(\.noteSourceID))
-	        let inferredLegacySuspendedAt = introducedCardsBySourceID.values
-	            .filter { card in
-	                card.isSuspended
-	                    && card.suspendedAt == nil
-	                    && !sourceIDsWithStateEvents.contains(card.noteSourceID)
-	            }
-	            .map(\.updatedAt)
-	            .max()
+        let stateEventsBySourceID = Dictionary(grouping: cardStateEvents.filter { !$0.noteSourceID.isEmpty }, by: \.noteSourceID)
+            .mapValues { events in
+                events.sorted { $0.changedAt < $1.changedAt }
+            }
+        let stateEventsByCardKey = Dictionary(grouping: cardStateEvents.filter { !$0.cardKey.isEmpty }, by: \.cardKey)
+            .mapValues { events in
+                events.sorted { $0.changedAt < $1.changedAt }
+            }
+        let sourceIDsWithStateEvents = Set(cardStateEvents.map(\.noteSourceID))
+        let inferredLegacySuspendedAt = introducedCardsBySourceID.values
+            .filter { card in
+                card.isSuspended
+                    && card.suspendedAt == nil
+                    && !sourceIDsWithStateEvents.contains(card.noteSourceID)
+            }
+            .map(\.updatedAt)
+            .max()
 
-	        let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
-	            guard let card = introducedCardsBySourceID[sourceID] else { return nil }
-	            return IntroducedVocabularyEntry(
-	                introducedDay: introducedDay,
-	                card: card,
-	                reviews: reviewEventsBySourceID[sourceID] ?? [],
-	                stateEvents: stateEventsByCardKey[card.cardKey] ?? [],
-	                inferredLegacySuspendedAt: inferredLegacySuspendedAt
-	            )
-	        }
+        let introducedEntries = firstReviewDaysBySourceID.compactMap { sourceID, introducedDay -> IntroducedVocabularyEntry? in
+            guard let card = introducedCardsBySourceID[sourceID] else { return nil }
+            let stateEvents = stateEventsBySourceID[sourceID] ?? stateEventsByCardKey[card.cardKey] ?? []
+            return IntroducedVocabularyEntry(
+                introducedDay: introducedDay,
+                card: card,
+                reviews: reviewEventsBySourceID[sourceID] ?? [],
+                stateEvents: stateEvents,
+                inferredLegacySuspendedAt: inferredLegacySuspendedAt
+            )
+        }
 
         guard !introducedEntries.isEmpty else { return [] }
 
