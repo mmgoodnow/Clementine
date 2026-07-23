@@ -4,6 +4,7 @@ import SwiftData
 
 enum LegacySuspensionHistoryRepair {
     private static let suspensionFeatureReferenceTimestamp: TimeInterval = 804_880_800
+    private static let stateTrackingReferenceTimestamp: TimeInterval = 805_174_200
     private static let minimumBulkTransactionSourceCount = 20
 
     static func repair(context: ModelContext) throws -> Int {
@@ -147,6 +148,7 @@ enum LegacySuspensionHistoryRepair {
             JOIN ZSTUDYCARD c
               ON c.Z_PK = ch.ZENTITYPK
             WHERE t.ZTIMESTAMP >= \(suspensionFeatureReferenceTimestamp)
+              AND t.ZTIMESTAMP <= \(stateTrackingReferenceTimestamp)
               AND c.ZNOTESOURCEID != ''
         ),
         bulk_transactions AS (
