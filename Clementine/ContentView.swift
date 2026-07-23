@@ -116,6 +116,7 @@ struct ContentView: View {
         .task {
             ensureSettings()
             deduplicateSyncedSeedData()
+            repairLegacySuspensionHistory()
             moveToNextCard()
             prepareSpeech(for: activeNote)
             presentVocabularyCalibrationIfNeeded()
@@ -403,6 +404,13 @@ struct ContentView: View {
     private func deduplicateSyncedSeedData() {
         let removedCount = (try? SeedDeduplicator.removeDuplicateSeedRecords(context: modelContext)) ?? 0
         if removedCount > 0, activeCard == nil {
+            moveToNextCard()
+        }
+    }
+
+    private func repairLegacySuspensionHistory() {
+        let repairedCount = (try? LegacySuspensionHistoryRepair.repair(context: modelContext)) ?? 0
+        if repairedCount > 0, activeCard == nil {
             moveToNextCard()
         }
     }
@@ -2203,9 +2211,9 @@ private struct IntroducedVocabularyEntry {
         }
 
         guard card.isSuspended else { return false }
-        guard let suspendedAt = card.suspendedAt else {
-            return Calendar.current.isDate(referenceDate, inSameDayAs: now)
-        }
+        let suspendedAt = card.suspendedAt
+            ?? reviews.last?.reviewedAt
+            ?? now
         return suspendedAt <= referenceDate
     }
 
